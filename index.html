@@ -1138,7 +1138,9 @@ function processScan(raw){
   if(recentScans.length>12)recentScans.pop();
   renderRecentScans();
   clearTimeout(window._rt);
-  window._rt=setTimeout(()=>{res.className='scan-result';},4500);
+  window._rt=setTimeout(()=>{
+  document.getElementById('scan-result').className='scan-result';
+},4500);
 
 function showDetailGrid(g){
   const dual=isDual(g);
