@@ -1245,7 +1245,25 @@ guests=[
   {uid:'2024PG019',name:'Arjun Mehta',   degree:'PG', email:'arjun@example.com',  mobile:'9876543213',passType:'Dual Entry',  checkinCount:0,lastCheckin:null},
   {uid:'2024UG088',name:'Neha Kapoor',   degree:'UG', email:'neha@example.com',   mobile:'9876543214',passType:'Single Entry',checkinCount:0,lastCheckin:null},
 ];
-renderGuests();updateStats();
+  window.sendGuestsToServer = function(){
+  fetch("https://scanner-backend-elao.onrender.com/guests", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(guests)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Guests synced:", data);
+    alert("Guests sent to server");
+  });
+}
+
+sendGuestsToServer();
+
+renderGuests();
+updateStats();
 </script>
 </body>
 </html>
