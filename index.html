@@ -1070,26 +1070,32 @@ function manualScan(){
 
 function processScan(raw){
 
+  const uid = raw.trim();
+
+  const resBox = document.getElementById('scan-result');
+  resBox.className = 'scan-result show';
+
+  // 🔥 Call backend
   fetch("https://scanner-backend-elao.onrender.com/scan", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      uid: raw
+      uid: uid
     })
   })
   .then(res => res.json())
   .then(data => {
 
-    const resBox = document.getElementById('scan-result');
-    resBox.className = 'scan-result show';
-
     if (data.status === "not_found") {
       resBox.classList.add('fail');
       document.getElementById('res-icon').textContent = '✕';
       document.getElementById('res-name').textContent = 'Not Registered';
-      document.getElementById('res-sub').textContent = raw;
+      document.getElementById('res-sub').textContent = uid;
+
+      vibrate([100,50,100]);
+      soundError();
     }
 
     else if (data.status === "duplicate") {
@@ -1097,6 +1103,9 @@ function processScan(raw){
       document.getElementById('res-icon').textContent = '⚠';
       document.getElementById('res-name').textContent = data.guest.name;
       document.getElementById('res-sub').textContent = 'Already scanned';
+
+      vibrate([200,80,200]);
+      soundDuplicate();
     }
 
     else if (data.status === "success") {
@@ -1104,6 +1113,13 @@ function processScan(raw){
       document.getElementById('res-icon').textContent = '✓';
       document.getElementById('res-name').textContent = data.guest.name;
       document.getElementById('res-sub').textContent = 'Entry allowed';
+
+      // ✅ Keep UI alive
+      updateStats();
+      renderGuests();
+
+      vibrate([60]);
+      soundSuccess();
     }
 
   })
