@@ -1072,6 +1072,8 @@ function processScan(raw){
 
   console.log("SCANNED VALUE:", raw);
   const uid = raw.trim();
+  console.log("Calling backend...");
+  
   fetch("https://scanner-backend-elao.onrender.com/scan", {
   method: "POST",
   headers: {
@@ -1087,7 +1089,7 @@ function processScan(raw){
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
-  if (data.type === "not_found") {
+  if (data.status === "not_found") {
     resBox.classList.add('fail');
     document.getElementById('res-icon').textContent = '✕';
     document.getElementById('res-name').textContent = 'Not Registered';
@@ -1097,7 +1099,7 @@ function processScan(raw){
     soundError();
   }
 
-  else if (data.type === "duplicate") {
+  else if (data.status === "duplicate") {
     resBox.classList.add('dup');
     document.getElementById('res-icon').textContent = '⚠';
     document.getElementById('res-name').textContent = data.guest.name;
@@ -1107,7 +1109,7 @@ function processScan(raw){
     soundDuplicate();
   }
 
-  else if (data.type === "success") {
+  else if (data.status === "success") {
     resBox.classList.add('ok');
     document.getElementById('res-icon').textContent = '✓';
     document.getElementById('res-name').textContent = data.guest.name;
