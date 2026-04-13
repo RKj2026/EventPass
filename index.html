@@ -1077,84 +1077,52 @@ function processScan(raw){
   headers: {
     "Content-Type": "application/json"
   },
-  body: JSON.stringify({
-    uid: uid
-  })
+  body: JSON.stringify({ uid: uid })
 })
 .then(response => response.json())
 .then(data => {
-  console.log("Backend:", data);
-});
 
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
-  // 🔥 Call backend
-  fetch("https://scanner-backend-elao.onrender.com/scan", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      uid: uid
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
+  if (data.status === "not_found") {
+    resBox.classList.add('fail');
+    document.getElementById('res-icon').textContent = '✕';
+    document.getElementById('res-name').textContent = 'Not Registered';
+    document.getElementById('res-sub').textContent = uid;
 
-    if (data.status === "not_found") {
-      resBox.classList.add('fail');
-      document.getElementById('res-icon').textContent = '✕';
-      document.getElementById('res-name').textContent = 'Not Registered';
-      document.getElementById('res-sub').textContent = uid;
+    vibrate([100,50,100]);
+    soundError();
+  }
 
-      vibrate([100,50,100]);
-      soundError();
-    }
+  else if (data.status === "duplicate") {
+    resBox.classList.add('dup');
+    document.getElementById('res-icon').textContent = '⚠';
+    document.getElementById('res-name').textContent = data.guest.name;
+    document.getElementById('res-sub').textContent = 'Already scanned';
 
-    else if (data.status === "duplicate") {
-      resBox.classList.add('dup');
-      document.getElementById('res-icon').textContent = '⚠';
-      document.getElementById('res-name').textContent = data.guest.name;
-      document.getElementById('res-sub').textContent = 'Already scanned';
+    vibrate([200,80,200]);
+    soundDuplicate();
+  }
 
-      vibrate([200,80,200]);
-      soundDuplicate();
-    }
+  else if (data.status === "success") {
+    resBox.classList.add('ok');
+    document.getElementById('res-icon').textContent = '✓';
+    document.getElementById('res-name').textContent = data.guest.name;
+    document.getElementById('res-sub').textContent = 'Entry allowed';
 
-    else if (data.status === "success") {
-      resBox.classList.add('ok');
-      document.getElementById('res-icon').textContent = '✓';
-      document.getElementById('res-name').textContent = data.guest.name;
-      document.getElementById('res-sub').textContent = 'Entry allowed';
+    updateStats();
+    renderGuests();
 
-      // ✅ Keep UI alive
-      updateStats();
-      renderGuests();
+    vibrate([60]);
+    soundSuccess();
+  }
 
-      vibrate([60]);
-      soundSuccess();
-    }
-
-  })
-  .catch(err => {
-    alert("Server error");
-    console.log(err);
-  });
-}
-
- recentScans.unshift({
-  g:{uid:'unknown',name:'unknown',passType:'',degree:''},
-  type:'manual',
-  time:new Date().toISOString(),
-  remote:false
+})
+.catch(err => {
+  console.log(err);
+  alert("Server error");
 });
-  if(recentScans.length>12)recentScans.pop();
-  renderRecentScans();
-  clearTimeout(window._rt);
-  window._rt=setTimeout(()=>{
-  document.getElementById('scan-result').className='scan-result';
-},4500);
 
 function showDetailGrid(g){
   const dual=isDual(g);
