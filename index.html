@@ -1071,6 +1071,19 @@ function manualScan(){
 function processScan(raw){
 
   const uid = raw.trim();
+  fetch("https://scanner-backend-elao.onrender.com/scan", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    uid: uid
+  })
+})
+.then(response => response.json())
+.then(data => {
+  console.log("Backend:", data);
+});
 
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
