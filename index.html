@@ -1082,6 +1082,8 @@ function processScan(raw){
 .then(response => response.json())
 .then(data => {
 
+  console.log("Backend response:", data);
+
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
