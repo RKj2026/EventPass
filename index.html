@@ -1130,11 +1130,11 @@ function processScan(raw){
 }
 
   recentScans.unshift({
-    g:{uid:raw,name:raw,passType:'',degree:''},
-    type:entryType,
-    time:new Date().toISOString(),
-    remote:false
-  });
+  g:{uid:'unknown',name:'unknown',passType:'',degree:''},
+  type:entryType,
+  time:new Date().toISOString(),
+  remote:false
+});
   if(recentScans.length>12)recentScans.pop();
   renderRecentScans();
   clearTimeout(window._rt);
