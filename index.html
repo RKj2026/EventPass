@@ -1070,6 +1070,7 @@ function manualScan(){
 
 function processScan(raw){
 
+  console.log("SCANNED VALUE:", raw);
   const uid = raw.trim();
   fetch("https://scanner-backend-elao.onrender.com/scan", {
   method: "POST",
