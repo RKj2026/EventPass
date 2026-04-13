@@ -1069,49 +1069,49 @@ function manualScan(){
 }
 
 function processScan(raw){
-  const uid=raw.trim();
-  const g=guests.find(x=>x.uid===uid||x.name.toLowerCase()===uid.toLowerCase());
-  const res=document.getElementById('scan-result');
-  res.className='scan-result show';
-  document.getElementById('res-detail').innerHTML='';
-  const dual=g&&isDual(g);
-  const max=dual?2:1;
-  let entryType='not_found';
 
-  if(!g){
-    res.classList.add('fail');
-    document.getElementById('res-icon').textContent='✕';
-    document.getElementById('res-name').textContent='Not Registered';
-    document.getElementById('res-sub').textContent='"'+uid+'" not found in attendee list';
-    logEntry({uid,name:uid,passType:'',degree:''},'not_found');
-    vibrate([100,50,100]);
-    soundError();
-    entryType='not_found';
-  }else if(g.checkinCount>=max){
-    res.classList.add('dup');
-    document.getElementById('res-icon').textContent='⚠';
-    document.getElementById('res-name').textContent=g.name;
-    document.getElementById('res-sub').textContent=dual?'Both entries already used':'Already checked in at '+fmtTime(g.lastCheckin);
-    logEntry(g,'duplicate');
-    vibrate([200,80,200]);
-    soundDuplicate();
-    showDetailGrid(g);
-    entryType='duplicate';
-  }else{
-    g.checkinCount++;g.lastCheckin=new Date().toISOString();
-    res.classList.add('ok');
-    document.getElementById('res-icon').textContent='✓';
-    document.getElementById('res-name').textContent=g.name;
-    document.getElementById('res-sub').textContent=dual?(g.checkinCount===1?'1st Entry (1 of 2)':'2nd Entry (2 of 2)'):'Entry granted';
-    logEntry(g,'checked_in');
-    updateStats();renderLog();renderGuests();
-    vibrate([60]);
-    soundSuccess();
-    showDetailGrid(g);
-    entryType='checked_in';
-    // Broadcast to all other scan points
-    broadcastScan(g.uid, g.checkinCount, g.lastCheckin, entryType);
-  }
+  fetch("https://scanner-backend-elao.onrender.com/scan", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      uid: raw
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    const resBox = document.getElementById('scan-result');
+    resBox.className = 'scan-result show';
+
+    if (data.status === "not_found") {
+      resBox.classList.add('fail');
+      document.getElementById('res-icon').textContent = '✕';
+      document.getElementById('res-name').textContent = 'Not Registered';
+      document.getElementById('res-sub').textContent = raw;
+    }
+
+    else if (data.status === "duplicate") {
+      resBox.classList.add('dup');
+      document.getElementById('res-icon').textContent = '⚠';
+      document.getElementById('res-name').textContent = data.guest.name;
+      document.getElementById('res-sub').textContent = 'Already scanned';
+    }
+
+    else if (data.status === "success") {
+      resBox.classList.add('ok');
+      document.getElementById('res-icon').textContent = '✓';
+      document.getElementById('res-name').textContent = data.guest.name;
+      document.getElementById('res-sub').textContent = 'Entry allowed';
+    }
+
+  })
+  .catch(err => {
+    alert("Server error");
+    console.log(err);
+  });
+}
 
   recentScans.unshift({
     g:g||{uid,name:uid,passType:'',degree:''},
