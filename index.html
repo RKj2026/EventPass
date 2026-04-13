@@ -1129,9 +1129,9 @@ function processScan(raw){
   });
 }
 
-  recentScans.unshift({
+ recentScans.unshift({
   g:{uid:'unknown',name:'unknown',passType:'',degree:''},
-  type:entryType,
+  type:'manual',
   time:new Date().toISOString(),
   remote:false
 });
