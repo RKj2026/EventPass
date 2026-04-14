@@ -357,19 +357,15 @@ let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
 const COOLDOWN=2500;
 let rebuildTimer=null, logoDataUrl='', cameraActive=false;
 
-// ══ REAL-TIME SYNC (The magic happens here) ════════════════════════
-// Listen for changes to the 'guests' collection
+// ══ REAL-TIME SYNC ═════════════════════════════════════════════════
 onSnapshot(collection(db, "guests"), (snapshot) => {
   window.guests = [];
-  snapshot.forEach((doc) => {
-    window.guests.push({ id: doc.id, ...doc.data() });
-  });
+  snapshot.forEach((doc) => { window.guests.push({ id: doc.id, ...doc.data() }); });
   updateStats();
   renderGuests();
   document.getElementById('sync-badge').style.display='inline-block';
 });
 
-// Listen for changes to the 'log' collection
 const q = query(collection(db, "log"), orderBy("time", "desc"));
 onSnapshot(q, (snapshot) => {
   window.entryLog = [];
@@ -388,8 +384,8 @@ onSnapshot(q, (snapshot) => {
       count++;
     }
   });
-  renderLog();
-  renderRecentScans();
+  window.renderLog();
+  window.renderRecentScans();
 });
 
 // ── Audio ───────────────────
@@ -401,16 +397,12 @@ function getAudioCtx(){
 }
 function beep(freq,dur,type,vol,startDelay=0){
   try{
-    const ctx=getAudioCtx();
-    const osc=ctx.createOscillator();
-    const gain=ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type=type||'sine';
+    const ctx=getAudioCtx();const osc=ctx.createOscillator();const gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);osc.type=type||'sine';
     osc.frequency.setValueAtTime(freq,ctx.currentTime+startDelay);
     gain.gain.setValueAtTime(vol||0.4,ctx.currentTime+startDelay);
     gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+startDelay+dur);
-    osc.start(ctx.currentTime+startDelay);
-    osc.stop(ctx.currentTime+startDelay+dur+0.05);
+    osc.start(ctx.currentTime+startDelay);osc.stop(ctx.currentTime+startDelay+dur+0.05);
   }catch(e){}
 }
 function soundSuccess(){ beep(880,0.18,'sine',0.45); }
@@ -429,20 +421,19 @@ window.switchTab = function(el,name){
   el.classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='passes') buildAllPasses();
-  if(name!=='scanner') stopScanner();
-  if(name==='log') renderLog();
+  if(name!=='scanner') window.stopScanner();
+  if(name==='log') window.renderLog();
 }
 
 function updateStats(){
   const t=window.guests.length, c=window.guests.filter(g=>g.checkinCount>0).length;
   document.getElementById('s-total').textContent=t;
   document.getElementById('s-checked').textContent=c;
-  document.getElementById('s-single').textContent=window.guests.filter(g=>!isDual(g)).length;
-  document.getElementById('s-dual').textContent=window.guests.filter(g=>isDual(g)).length;
+  document.getElementById('s-single').textContent=window.guests.filter(g=>!window.isDual(g)).length;
+  document.getElementById('s-dual').textContent=window.guests.filter(g=>window.isDual(g)).length;
   document.getElementById('header-badge').textContent=t+' attendee'+(t!==1?'s':'');
 }
 
-// ── File upload & manual add (Saves to Firestore) ───────────────
 window.handleFile = async function(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
@@ -451,7 +442,7 @@ window.handleFile = async function(e){
       const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
       let added=0;
-      showToast("Uploading to database...");
+      window.showToast("Uploading to database...");
       
       for(const row of rows) {
         const keys=Object.keys(row);
@@ -466,7 +457,6 @@ window.handleFile = async function(e){
         const name=String(row[nameKey||keys[1]]||'').trim();if(!name)continue;
         const uid=String(row[uidKey||keys[0]]||'').trim()||('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase());
         
-        // Save straight to Firestore
         await setDoc(doc(db, "guests", uid), {
           uid, name,
           degree:String(row[degKey]||'UG').trim()||'UG',
@@ -477,7 +467,7 @@ window.handleFile = async function(e){
         });
         added++;
       }
-      showToast(added+' attendees imported ✓');
+      window.showToast(added+' attendees imported ✓');
     } catch(err) { console.error(err); alert('Could not read file. Use .xlsx or .csv'); }
   };
   r.readAsArrayBuffer(file);e.target.value='';
@@ -486,7 +476,7 @@ window.handleFile = async function(e){
 window.addManual = async function(){
   const uid=document.getElementById('add-uid').value.trim();
   const name=document.getElementById('add-name').value.trim();
-  if(!uid||!name){showToast('Unique ID and Name are required');return;}
+  if(!uid||!name){window.showToast('Unique ID and Name are required');return;}
   
   await setDoc(doc(db, "guests", uid), {
     uid, name,
@@ -498,7 +488,7 @@ window.addManual = async function(){
   });
   
   ['add-uid','add-name','add-email','add-mobile'].forEach(id=>document.getElementById(id).value='');
-  showToast('Attendee added ✓');
+  window.showToast('Attendee added ✓');
 }
 
 window.clearAll = async function(){
@@ -507,17 +497,17 @@ window.clearAll = async function(){
 
 window.renderGuests = function(){
   const q=document.getElementById('guest-search').value.toLowerCase();
-  const f=window.guests.filter(g=>!q||g.name.toLowerCase().includes(q)||g.uid.toLowerCase().includes(q)||g.email.toLowerCase().includes(q)||g.mobile.includes(q));
+  const f=window.guests.filter(g=>!q||g.name.toLowerCase().includes(q)||g.uid.toLowerCase().includes(q)||(g.email||'').toLowerCase().includes(q)||(g.mobile||'').includes(q));
   const el=document.getElementById('guest-list');
   if(!f.length){el.innerHTML='<div class="empty">'+(window.guests.length?'No matches.':'No attendees yet.')+'</div>';return;}
   el.innerHTML=f.map(g=>{
-    const dual=isDual(g);
+    const dual=window.isDual(g);
     return `<div class="guest-row">
-      <div class="guest-avatar ${dual?'avatar-blue':'avatar-red'}">${esc(initials(g.name))}</div>
+      <div class="guest-avatar ${dual?'avatar-blue':'avatar-red'}">${window.esc(window.initials(g.name))}</div>
       <div class="guest-info">
-        <div class="guest-name">${esc(g.name)}</div>
-        <div class="guest-meta">${esc(g.degree)} · ${esc(g.email||g.mobile||'—')}</div>
-        <div class="guest-uid">${esc(g.uid)}</div>
+        <div class="guest-name">${window.esc(g.name)}</div>
+        <div class="guest-meta">${window.esc(g.degree)} · ${window.esc(g.email||g.mobile||'—')}</div>
+        <div class="guest-uid">${window.esc(g.uid)}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
         <span class="badge ${dual?'badge-blue':'badge-red'}">${dual?'Dual':'Single'}</span>
@@ -537,11 +527,11 @@ window.manualCheckin = async function(uid){
     await updateDoc(ref, { checkinCount: 0, lastCheckin: null });
   } else {
     await updateDoc(ref, { checkinCount: 1, lastCheckin: new Date().toISOString() });
-    logToFirebase(g, 'checked_in');
+    window.logToFirebase(g, 'checked_in');
   }
 }
 
-// ── Pass & UI Logic (Mostly untouched) ────────────────────────
+// ── Pass UI ────────────────────────
 const PW=520, PH=820;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
@@ -572,11 +562,14 @@ function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrU
   c.strokeStyle='#f3f4f6';c.lineWidth=1;c.beginPath();c.moveTo(PAD,infoY+34);c.lineTo(PW-PAD,infoY+34);c.stroke();field('EMAIL',g.email||'—',PAD,infoY+44,PW-PAD*2);
   c.beginPath();c.moveTo(PAD,infoY+74);c.lineTo(PW-PAD,infoY+74);c.stroke();field('MOBILE',g.mobile||'—',PAD,infoY+84,hw);
   c.beginPath();c.moveTo(PAD,infoY+114);c.lineTo(PW-PAD,infoY+114);c.stroke();
-  const QS=220, QX=Math.round((PW-QS)/2), QY=PH-QS-64;
+  
+  // ⚡️ LARGER QR CODE LOGIC (280px up from 220px)
+  const QS=280, QX=Math.round((PW-QS)/2), QY=465;
   c.fillStyle='#f9fafb';rr(c,QX-14,QY-14,QS+28,QS+46,12);c.fill();c.strokeStyle=accClr;c.lineWidth=3;rr(c,QX-14,QY-14,QS+28,QS+46,12);c.stroke();
   c.fillStyle=accClr;rr(c,QX-14,QY-14,QS+28,10,12);c.fill();c.fillRect(QX-14,QY-8,QS+28,8);
   if(qrUrl){const qi=new Image();qi.onload=()=>{c.drawImage(qi,QX,QY,QS,QS);};qi.src=qrUrl;}
-  c.fillStyle='#374151';c.font='bold 13px monospace';c.textAlign='center';c.fillText(g.uid,PW/2,QY+QS+28);
+  c.fillStyle='#374151';c.font='bold 16px monospace';c.textAlign='center';c.fillText(g.uid,PW/2,QY+QS+24); // Adjusted text placement for larger box
+  
   c.fillStyle=topClr;c.fillRect(0,PH-26,PW,26);c.fillStyle='rgba(255,255,255,0.55)';c.font='10px -apple-system,sans-serif';c.textAlign='center';c.fillText(isBlue?'Valid for two entries · Not transferable':'Valid for one entry only · Not transferable',PW/2,PH-10);
   return cv;
 }
@@ -592,12 +585,12 @@ window.getSettings = function(){
   };
 }
 
-window.scheduleRebuild = function(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(buildAllPasses,800);}
+window.scheduleRebuild = function(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(window.buildAllPasses,800);}
 window.buildAllPasses = function(){
   const grid=document.getElementById('pass-grid');
   if(!window.guests.length){grid.innerHTML='<div class="empty">Import attendees first.</div>';return;}
   grid.innerHTML='<div class="empty" style="padding:20px">Generating passes…</div>';
-  const s=getSettings();let logoImg=null;const go=()=>genQRs(s,logoImg);
+  const s=window.getSettings();let logoImg=null;const go=()=>genQRs(s,logoImg);
   if(logoDataUrl){logoImg=new Image();logoImg.onload=go;logoImg.onerror=go;logoImg.src=logoDataUrl;}else go();
 }
 
@@ -606,7 +599,8 @@ function genQRs(s,logoImg){
   window.guests.forEach((g,idx)=>{
     const tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;';
     document.body.appendChild(tmp);
-    try{new QRCode(tmp,{text:g.uid,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+    // ⚡️ LARGER QR GENERATION CALL (280px)
+    try{new QRCode(tmp,{text:g.uid,width:280,height:280,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
     setTimeout(()=>{
       const qi=tmp.querySelector('img');const qc=tmp.querySelector('canvas');
       qrUrls[idx]=qi?qi.src:(qc?qc.toDataURL():'');try{document.body.removeChild(tmp);}catch(e){}
@@ -620,13 +614,13 @@ function renderGrid(qrUrls,s,logoImg){
   const container=document.createElement('div');container.className='pass-grid';
   let rendered=0;
   window.guests.forEach((g,idx)=>{
-    const cv=drawPass(g,s.evtName,s.evtDate,s.evtTime,s.evtVenue,s.instName,s.instAddr,isDual(g)?'blue':'red',qrUrls[idx],logoImg);
+    const cv=drawPass(g,s.evtName,s.evtDate,s.evtTime,s.evtVenue,s.instName,s.instAddr,window.isDual(g)?'blue':'red',qrUrls[idx],logoImg);
     setTimeout(()=>{
       const wrap=document.createElement('div');wrap.className='pass-card';
-      const strip=document.createElement('div');strip.style.cssText=`width:100%;height:5px;border-radius:4px;background:${isDual(g)?'#2563d4':'#dc2626'};`;
-      wrap.appendChild(strip);cv.onclick=()=>dlOne(cv,g);wrap.appendChild(cv);
+      const strip=document.createElement('div');strip.style.cssText=`width:100%;height:5px;border-radius:4px;background:${window.isDual(g)?'#2563d4':'#dc2626'};`;
+      wrap.appendChild(strip);cv.onclick=()=>window.dlOne(cv,g);wrap.appendChild(cv);
       const act=document.createElement('div');act.className='pass-actions';
-      act.innerHTML=`<span class="badge ${isDual(g)?'badge-blue':'badge-red'}" style="flex:0;padding:5px 8px;">${isDual(g)?'Dual':'Single'}</span>
+      act.innerHTML=`<span class="badge ${window.isDual(g)?'badge-blue':'badge-red'}" style="flex:0;padding:5px 8px;">${window.isDual(g)?'Dual':'Single'}</span>
         <button class="btn btn-ghost" style="flex:1;font-size:10px;" onclick="dlOne(this.closest('.pass-card').querySelector('canvas'),window.guests[${idx}])">⬇ PNG</button>`;
       wrap.appendChild(act);container.appendChild(wrap);
       if(++rendered===window.guests.length) grid.appendChild(container);
@@ -640,20 +634,20 @@ window.dlOne = function(cv,g){
 }
 window.downloadAll = function(){
   const cards=document.querySelectorAll('.pass-card');
-  if(!cards.length){showToast('Generate passes first');return;}
-  cards.forEach((card,i)=>{setTimeout(()=>{const cv=card.querySelector('canvas');if(cv&&window.guests[i])dlOne(cv,window.guests[i]);},i*300);});
-  showToast('Downloading '+cards.length+' passes…');
+  if(!cards.length){window.showToast('Generate passes first');return;}
+  cards.forEach((card,i)=>{setTimeout(()=>{const cv=card.querySelector('canvas');if(cv&&window.guests[i])window.dlOne(cv,window.guests[i]);},i*300);});
+  window.showToast('Downloading '+cards.length+' passes…');
 }
 window.printPasses = function(){
   const cards=document.querySelectorAll('.pass-card');
-  if(!cards.length){showToast('Generate passes first');return;}
+  if(!cards.length){window.showToast('Generate passes first');return;}
   const win=window.open('','_blank');if(!win){alert('Allow popups to print.');return;}
   let imgs='';
   cards.forEach((card,i)=>{
     const cv=card.querySelector('canvas');if(!cv)return;
-    const dual=window.guests[i]&&isDual(window.guests[i]);
+    const dual=window.guests[i]&&window.isDual(window.guests[i]);
     imgs+=`<div class="pass" style="border-top:5px solid ${dual?'#2563d4':'#dc2626'}">
-      <img src="${cv.toDataURL('image/png')}"><div class="nm">${esc(window.guests[i]?.name||'')} <span style="color:${dual?'#2563d4':'#dc2626'};font-size:10px;">${dual?'[DUAL]':'[SINGLE]'}</span></div></div>`;
+      <img src="${cv.toDataURL('image/png')}"><div class="nm">${window.esc(window.guests[i]?.name||'')} <span style="color:${dual?'#2563d4':'#dc2626'};font-size:10px;">${dual?'[DUAL]':'[SINGLE]'}</span></div></div>`;
   });
   win.document.write(`<!DOCTYPE html><html><head><title>Event Passes</title>
   <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#f5f5f5;font-family:sans-serif;padding:10px;}
@@ -666,7 +660,7 @@ window.printPasses = function(){
   win.document.close();win.onload=()=>{win.focus();win.print();};
 }
 
-// ══ Scanner & Validation (Firestore powered) ═════════════════
+// ══ Scanner & Validation ═════════════════
 window.requestCameraPermission = async function(){
   const btn=document.getElementById('cam-start-btn');const note=document.getElementById('cam-note');
   btn.textContent='📷 Requesting access…';btn.disabled=true;note.style.display='none';
@@ -675,7 +669,7 @@ window.requestCameraPermission = async function(){
     note.innerHTML='<b>Camera not available.</b> Your browser blocked camera access because this page is not served over HTTPS.<br><br>'+
       '<b>Workaround options:</b><br>① <b>iOS Safari:</b> Tap Share → Add to Home Screen, then open from there<br>'+
       '② <b>Android Chrome:</b> tap ⋮ menu → Add to Home Screen<br>③ Host the file at any HTTPS URL (GitHub Pages, etc.)<br>④ Use the <b>Manual Entry</b> field below instead.';
-    document.getElementById('hs-hint').style.display='block';showToast('Camera not available — use Manual Entry');return;
+    document.getElementById('hs-hint').style.display='block';window.showToast('Camera not available — use Manual Entry');return;
   }
   try{
     const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}}});
@@ -697,21 +691,21 @@ window.requestCameraPermission = async function(){
     btn.textContent='📷 Start Camera Scanner';btn.disabled=false;note.style.display='block';
     if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
       note.innerHTML='<b>Permission denied.</b><br>• On <b>iOS</b>: Settings → Safari → Camera → Allow<br>• On <b>Android</b>: tap 🔒 in address bar → Camera → Allow<br>• Then reload and try again, or use <b>Manual Entry</b> below.';
-      showToast('Camera permission denied');
+      window.showToast('Camera permission denied');
     } else {
-      note.innerHTML='<b>Camera error:</b> '+esc(err.message||err.name)+'<br>Use Manual Entry below.';showToast('Camera error');
+      note.innerHTML='<b>Camera error:</b> '+window.esc(err.message||err.name)+'<br>Use Manual Entry below.';window.showToast('Camera error');
     }
   }
 }
 
 window.switchCamera = async function(){
   const sel=document.getElementById('camera-select');if(!sel.value||!cameraActive)return;
-  stopScanner(false);
+  window.stopScanner(false);
   try{
     const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:sel.value},width:{ideal:1280},height:{ideal:1280}}});
     videoStream=stream;const video=document.getElementById('qr-video');video.srcObject=stream;
     try{await video.play();}catch(e){}cameraActive=true;startScanning(video);
-  }catch(e){showToast('Could not switch camera');}
+  }catch(e){window.showToast('Could not switch camera');}
 }
 
 window.stopScanner = function(resetUI=true){
@@ -730,8 +724,8 @@ function startScanning(video){
     if(video.readyState!==video.HAVE_ENOUGH_DATA)return;
     canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height);
     const d=ctx.getImageData(0,0,canvas.width,canvas.height);const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});
-    if(code?.data){const now=Date.now();if(now-lastScanTime<COOLDOWN)return;lastScanTime=now;processScan(code.data);}
-  },150);
+    if(code?.data){const now=Date.now();if(now-lastScanTime<COOLDOWN)return;lastScanTime=now;window.processScan(code.data);}
+  },100); 
 }
 
 window.toggleTorch = async function(){
@@ -742,7 +736,7 @@ window.toggleTorch = async function(){
 
 window.manualScan = function(){
   const v=document.getElementById('manual-input').value.trim();if(!v)return;
-  processScan(v);document.getElementById('manual-input').value='';
+  window.processScan(v);document.getElementById('manual-input').value='';
 }
 
 window.processScan = async function(raw){
@@ -750,11 +744,9 @@ window.processScan = async function(raw){
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
-  // Check Firestore instead of local array
-  const ref = doc(db, "guests", uid);
-  const snap = await getDoc(ref);
+  const guest = window.guests.find(g => String(g.uid).toLowerCase() === uid.toLowerCase());
 
-  if (!snap.exists()) {
+  if (!guest) {
     resBox.classList.add('fail');
     document.getElementById('res-icon').textContent = '✕';
     document.getElementById('res-name').textContent = 'Not Registered';
@@ -762,12 +754,11 @@ window.processScan = async function(raw){
     document.getElementById('res-detail').innerHTML = '';
     
     vibrate([100,50,100]); soundError();
-    logToFirebase({uid: uid, name: "Unknown", passType: "N/A"}, 'not_found');
+    window.logToFirebase({uid: uid, name: "Unknown", passType: "N/A"}, 'not_found');
     return;
   }
 
-  const guest = snap.data();
-  const dual = isDual(guest);
+  const dual = window.isDual(guest);
   const maxEntries = dual ? 2 : 1;
   const currentCount = guest.checkinCount || 0;
 
@@ -779,39 +770,45 @@ window.processScan = async function(raw){
     showDetailGrid(guest);
     
     vibrate([200,80,200]); soundDuplicate();
-    logToFirebase(guest, 'duplicate');
+    window.logToFirebase(guest, 'duplicate');
     return;
   }
 
-  // Update Firestore - This triggers the onSnapshot to update all devices!
-  await updateDoc(ref, {
-    checkinCount: currentCount + 1,
-    lastCheckin: new Date().toISOString()
-  });
-
+  const newCount = currentCount + 1;
   resBox.classList.add('ok');
   document.getElementById('res-icon').textContent = '✓';
   document.getElementById('res-name').textContent = guest.name;
   document.getElementById('res-sub').textContent = 'Entry allowed';
   
-  showDetailGrid(guest);
+  showDetailGrid({ ...guest, checkinCount: newCount }); 
   vibrate([60]); soundSuccess();
-  logToFirebase(guest, 'checked_in');
+
+  const ref = doc(db, "guests", guest.uid);
+  updateDoc(ref, {
+    checkinCount: newCount,
+    lastCheckin: new Date().toISOString()
+  });
+
+  window.logToFirebase(guest, 'checked_in');
 }
 
-async function logToFirebase(g, type){
-  await addDoc(collection(db, "log"), {
-    uid: g.uid, name: g.name, degree: g.degree||'', passType: g.passType||'', type, time: new Date().toISOString()
-  });
+window.logToFirebase = async function(g, type){
+  try {
+    await addDoc(collection(db, "log"), {
+      uid: g.uid || 'Unknown', name: g.name || 'Unknown', degree: g.degree || '', passType: g.passType || '', type, time: new Date().toISOString()
+    });
+  } catch(e) {
+    console.error("Log error: ", e);
+  }
 }
 
 function showDetailGrid(g){
-  const dual=isDual(g);
+  const dual=window.isDual(g);
   document.getElementById('res-detail').innerHTML=`
-    <div class="scan-info-item"><div class="scan-info-lbl">Unique ID</div><div class="scan-info-val" style="font-family:monospace;font-size:11px">${esc(g.uid)}</div></div>
-    <div class="scan-info-item"><div class="scan-info-lbl">Degree</div><div class="scan-info-val">${esc(g.degree||'—')}</div></div>
-    <div class="scan-info-item"><div class="scan-info-lbl">Pass Type</div><div class="scan-info-val" style="color:${dual?'#60a5fa':'#f87171'}">${esc(g.passType)}</div></div>
-    <div class="scan-info-item"><div class="scan-info-lbl">Entries Used</div><div class="scan-info-val">${(g.checkinCount||0)+1} / ${dual?2:1}</div></div>`;
+    <div class="scan-info-item"><div class="scan-info-lbl">Unique ID</div><div class="scan-info-val" style="font-family:monospace;font-size:11px">${window.esc(g.uid)}</div></div>
+    <div class="scan-info-item"><div class="scan-info-lbl">Degree</div><div class="scan-info-val">${window.esc(g.degree||'—')}</div></div>
+    <div class="scan-info-item"><div class="scan-info-lbl">Pass Type</div><div class="scan-info-val" style="color:${dual?'#60a5fa':'#f87171'}">${window.esc(g.passType)}</div></div>
+    <div class="scan-info-item"><div class="scan-info-lbl">Entries Used</div><div class="scan-info-val">${g.checkinCount||0} / ${dual?2:1}</div></div>`;
 }
 
 function vibrate(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
@@ -822,9 +819,9 @@ window.renderRecentScans = function(){
   const cls={checked_in:'badge-green',duplicate:'badge-amber',not_found:'badge-red'};
   const lbl={checked_in:'✓ OK',duplicate:'⚠ Dup',not_found:'✕ Miss'};
   el.innerHTML=window.recentScans.map(s=>`<div class="log-item">
-    <span class="log-time">${fmtTime(s.time)}</span>
-    <span class="log-name">${esc(s.g.name)}
-      <span style="color:var(--text3);font-size:9px;"> ${esc(s.g.uid||'')}</span>
+    <span class="log-time">${window.fmtTime(s.time)}</span>
+    <span class="log-name">${window.esc(s.g.name)}
+      <span style="color:var(--text3);font-size:9px;"> ${window.esc(s.g.uid||'')}</span>
       ${s.remote?'<span style="color:var(--accent);font-size:9px;margin-left:3px;">↔️ synced</span>':''}
     </span>
     <span class="badge ${cls[s.type]}" style="font-size:10px;">${lbl[s.type]}</span>
@@ -834,21 +831,32 @@ window.renderRecentScans = function(){
 window.renderLog = function(){
   const q=(document.getElementById('log-search').value||'').toLowerCase();
   const f=document.getElementById('log-filter').value;
-  const filtered=window.entryLog.filter(l=>(!q||l.name.toLowerCase().includes(q)||l.uid.toLowerCase().includes(q))&&(!f||l.type===f));
   const el=document.getElementById('log-list');
-  if(!filtered.length){el.innerHTML='<div class="empty">No entries match.</div>';return;}
+
+  if(window.entryLog.length === 0){
+    el.innerHTML='<div class="empty">No entries yet.</div>';
+    return;
+  }
+
+  const filtered = window.entryLog.filter(l => 
+    (!q || (l.name || '').toLowerCase().includes(q) || (l.uid || '').toLowerCase().includes(q)) && 
+    (!f || l.type === f)
+  );
+  
+  if(!filtered.length){el.innerHTML='<div class="empty">No matches found for your search.</div>';return;}
+  
   const labels={checked_in:'In',duplicate:'Dup',not_found:'Miss'};
   const cls={checked_in:'badge-green',duplicate:'badge-amber',not_found:'badge-red'};
   el.innerHTML=filtered.map(l=>`<div class="log-item">
-    <span class="log-time">${fmtTime(l.time)}</span>
-    <span class="log-name">${esc(l.name)} <span style="color:var(--text3);font-size:9px;">${esc(l.uid)} ${esc(l.degree)}</span></span>
-    <span class="badge ${isDual({passType:l.passType})?'badge-blue':'badge-red'}" style="font-size:9px;margin-right:2px;">${isDual({passType:l.passType})?'D':'S'}</span>
+    <span class="log-time">${window.fmtTime(l.time)}</span>
+    <span class="log-name">${window.esc(l.name)} <span style="color:var(--text3);font-size:9px;">${window.esc(l.uid)} ${window.esc(l.degree)}</span></span>
+    <span class="badge ${window.isDual({passType:l.passType})?'badge-blue':'badge-red'}" style="font-size:9px;margin-right:2px;">${window.isDual({passType:l.passType})?'D':'S'}</span>
     <span class="badge ${cls[l.type]}">${labels[l.type]}</span>
   </div>`).join('');
 }
 
 window.exportLog = function(){
-  if(!window.entryLog.length){showToast('No entries yet');return;}
+  if(!window.entryLog.length){window.showToast('No entries yet');return;}
   const rows=[['Time','Name','Unique ID','Degree','Pass Type','Event'],
     ...window.entryLog.map(l=>[new Date(l.time).toLocaleString(),l.name,l.uid,l.degree,l.passType,l.type])];
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -864,18 +872,16 @@ window.showToast = function(msg){
   window._tt=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2500);
 }
 
-// Drag-drop
 const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleFile({target:{files:[f]}});});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)window.handleFile({target:{files:[f]}});});
 
-// Handlers for logo that need to be on window object since we are in a module
 window.handleLogo = handleLogo;
 window.clearLogo = clearLogo;
 
 document.addEventListener('touchstart', function unlockAudio(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('touchstart', unlockAudio);}, {once:true});
-document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});
+document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});});
 
 </script>
 </body>
