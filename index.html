@@ -855,7 +855,7 @@ window.renderLog = function(){
   </div>`).join('');
 }
 
-window.exportLog = function(){
+  window.exportLog = function(){
   if(!window.entryLog.length){window.showToast('No entries yet');return;}
   const rows=[['Time','Name','Unique ID','Degree','Pass Type','Event'],
     ...window.entryLog.map(l=>[new Date(l.time).toLocaleString(),l.name,l.uid,l.degree,l.passType,l.type])];
@@ -881,7 +881,7 @@ window.handleLogo = handleLogo;
 window.clearLogo = clearLogo;
 
 document.addEventListener('touchstart', function unlockAudio(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('touchstart', unlockAudio);}, {once:true});
-document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});});
+document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});
 
 </script>
 </body>
