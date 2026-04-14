@@ -1068,67 +1068,6 @@ function manualScan(){
   processScan(v);document.getElementById('manual-input').value='';
 }
 
-function processScan(raw){
-
-  console.log("SCANNED VALUE:", raw);
-  const uid = raw.trim();
-  console.log("Calling backend...");
-  
-  fetch("https://scanner-backend-elao.onrender.com/scan", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ uid: uid })
-})
-.then(response => response.json())
-.then(data => {
-
-  console.log("Backend response:", data);
-
-  const resBox = document.getElementById('scan-result');
-  resBox.className = 'scan-result show';
-
-  if (data.status === "not_found") {
-    resBox.classList.add('fail');
-    document.getElementById('res-icon').textContent = '✕';
-    document.getElementById('res-name').textContent = 'Not Registered';
-    document.getElementById('res-sub').textContent = uid;
-
-    vibrate([100,50,100]);
-    soundError();
-  }
-
-  else if (data.status === "duplicate") {
-    resBox.classList.add('dup');
-    document.getElementById('res-icon').textContent = '⚠';
-    document.getElementById('res-name').textContent = data.guest.name;
-    document.getElementById('res-sub').textContent = 'Already scanned';
-
-    vibrate([200,80,200]);
-    soundDuplicate();
-  }
-
-  else if (data.status === "success") {
-    resBox.classList.add('ok');
-    document.getElementById('res-icon').textContent = '✓';
-    document.getElementById('res-name').textContent = data.guest.name;
-    document.getElementById('res-sub').textContent = 'Entry allowed';
-
-    updateStats();
-    renderGuests();
-
-    vibrate([60]);
-    soundSuccess();
-  }
-
-})
-.catch(err => {
-  console.log(err);
-  alert("Server error");
-});
-}  
-
 function showDetailGrid(g){
   const dual=isDual(g);
   document.getElementById('res-detail').innerHTML=`
@@ -1218,25 +1157,86 @@ guests=[
   {uid:'2024PG019',name:'Arjun Mehta',   degree:'PG', email:'arjun@example.com',  mobile:'9876543213',passType:'Dual Entry',  checkinCount:0,lastCheckin:null},
   {uid:'2024UG088',name:'Neha Kapoor',   degree:'UG', email:'neha@example.com',   mobile:'9876543214',passType:'Single Entry',checkinCount:0,lastCheckin:null},
 ];
-  window.sendGuestsToServer = function(){
-  fetch("https://scanner-backend-elao.onrender.com/guests", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(guests)
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log("Guests synced:", data);
-    alert("Guests sent to server");
-  });
+  window.sendGuestsToServer = async function() {
+  for (let g of guests) {
+    await setDoc(doc(db, "guests", g.uid), {
+      ...g,
+      checkinCount: 0
+    });
+  }
+  alert("Guests uploaded to Firebase");
 }
 
 sendGuestsToServer();
 
 renderGuests();
 updateStats();
+</script>
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
+  authDomain: "scanner-system-32692.firebaseapp.com",
+  projectId: "scanner-system-32692",
+  storageBucket: "scanner-system-32692.firebasestorage.app",
+  messagingSenderId: "517388530229",
+  appId: "1:517388530229:web:418d4e80fce9bfa931f77c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.processScan = async function(raw) {
+  const uid = raw.trim();
+
+  const resBox = document.getElementById('scan-result');
+  resBox.className = 'scan-result show';
+
+  const ref = doc(db, "guests", uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    resBox.classList.add('fail');
+    document.getElementById('res-icon').textContent = '✕';
+    document.getElementById('res-name').textContent = 'Not Registered';
+    document.getElementById('res-sub').textContent = uid;
+
+    vibrate([100,50,100]);
+    soundError();
+    return;
+  }
+
+  const guest = snap.data();
+
+  if ((guest.checkinCount || 0) >= 1) {
+    resBox.classList.add('dup');
+    document.getElementById('res-icon').textContent = '⚠';
+    document.getElementById('res-name').textContent = guest.name;
+    document.getElementById('res-sub').textContent = 'Already scanned';
+
+    vibrate([200,80,200]);
+    soundDuplicate();
+    return;
+  }
+
+  await updateDoc(ref, {
+    checkinCount: (guest.checkinCount || 0) + 1,
+    lastCheckin: new Date().toISOString()
+  });
+
+  resBox.classList.add('ok');
+  document.getElementById('res-icon').textContent = '✓';
+  document.getElementById('res-name').textContent = guest.name;
+  document.getElementById('res-sub').textContent = 'Entry allowed';
+
+  updateStats();
+  renderGuests();
+
+  vibrate([60]);
+  soundSuccess();
+};
 </script>
 </body>
 </html>
