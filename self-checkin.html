@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Self Check-In | EventPass</title>
+<style>
+:root{ --bg:#0f1117; --bg2:#1a1d27; --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.16); --text:#f0f2f8; --text2:#8b90a7; --accent:#4f8ef7; --green:#22c97a; --radius:12px; --radius-sm:8px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:400px;text-align:center;}
+h1{font-size:22px;font-weight:800;margin-bottom:8px;color:var(--text);}
+p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.5;}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:15px;padding:12px;outline:none;margin-bottom:16px;transition:0.2s;}
+input:focus,select:focus{border-color:var(--accent);}
+.btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;}
+.btn:active{transform:scale(0.98);}
+.success-box{display:none;background:rgba(34,201,122,0.12);border:1px solid rgba(34,201,122,0.3);padding:24px;border-radius:var(--radius);}
+.success-icon{font-size:48px;margin-bottom:10px;}
+#reg-fields, #companion-fields{display:none;text-align:left;}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="container" id="main-card">
+  <h1>Attendee Check-In</h1>
+  <p id="instruction-text">Enter your registered Email or Unique ID to check in to the event instantly.</p>
+
+  <input type="text" id="lookup-input" placeholder="e.g. email@example.com or ID">
+  
+  <div id="reg-fields">
+    <div style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);padding:12px;border-radius:8px;font-size:12px;color:#f5a623;margin-bottom:16px;text-align:center;">
+      We couldn't find your ID. Please fill out the form below to register on the spot.
+    </div>
+    <label>Full Name *</label><input type="text" id="reg-name" placeholder="John Doe">
+    <label>Mobile Number *</label><input type="tel" id="reg-mobile" placeholder="10-digit number">
+    <label>Degree Type</label>
+    <select id="reg-degree"><option value="UG">Undergraduate (UG)</option><option value="PG">Postgraduate (PG)</option><option value="DIP">Diploma</option></select>
+  </div>
+
+  <div id="companion-fields">
+    <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);padding:12px;border-radius:8px;font-size:12px;color:#60a5fa;margin-bottom:16px;text-align:center;">
+      Dual Pass detected! You are claiming the 2nd entry. Please provide the guest's details.
+    </div>
+    <label>Guest's Full Name *</label><input type="text" id="comp-name" placeholder="Guest Name">
+    <label>Guest's Mobile</label><input type="tel" id="comp-mobile" placeholder="10-digit number">
+    <label>Guest's Email</label><input type="email" id="comp-email" placeholder="email@example.com">
+    <label>Guest's Degree Type</label>
+    <select id="comp-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
+  </div>
+
+  <button class="btn" id="action-btn" onclick="handleAction()">Check In</button>
+</div>
+
+<div class="container success-box" id="success-card">
+  <div class="success-icon">✅</div>
+  <h1 style="color:var(--green)">You're In!</h1>
+  <p style="margin-bottom:0">Your attendance has been recorded.<br>Enjoy the event!</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
+import { getFirestore, collection, doc, getDocs, setDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
+  authDomain: "scanner-system-32692.firebaseapp.com",
+  projectId: "scanner-system-32692",
+  storageBucket: "scanner-system-32692.firebasestorage.app",
+  messagingSenderId: "517388530229",
+  appId: "1:517388530229:web:418d4e80fce9bfa931f77c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+let isRegistrationMode = false;
+let foundGuestTemp = null;
+let foundDocIdTemp = null;
+
+window.handleAction = async function() {
+  const btn = document.getElementById('action-btn');
+  const lookupVal = document.getElementById('lookup-input').value.trim();
+  
+  if (!lookupVal) { alert("Please enter your ID or Email."); return; }
+  btn.textContent = "Processing..."; btn.disabled = true;
+
+  if (isRegistrationMode) {
+    // ── SPOT REGISTRATION ──
+    const name = document.getElementById('reg-name').value.trim();
+    const mobile = document.getElementById('reg-mobile').value.trim();
+    if (!name || !mobile) { alert("Name and Mobile are required."); btn.textContent = "Register & Check In"; btn.disabled = false; return; }
+    
+    const uid = lookupVal.includes('@') ? ('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase()) : lookupVal;
+    const email = lookupVal.includes('@') ? lookupVal : '';
+
+    const newGuest = {
+      uid: uid, name: name, mobile: mobile, email: email, degree: document.getElementById('reg-degree').value,
+      passType: "Single Entry", checkinCount: 1, lastCheckin: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, "guests", uid), newGuest);
+      await addDoc(collection(db, "log"), { uid, name, degree: newGuest.degree, passType: "Single Entry", type: "checked_in", time: new Date().toISOString() });
+      showSuccess();
+    } catch(e) { alert("Error saving data."); btn.textContent = "Register & Check In"; btn.disabled = false; }
+    
+  } else if (foundGuestTemp) {
+    // ── CONFIRMING 2ND PERSON ON DUAL PASS ──
+    const compName = document.getElementById('comp-name').value.trim();
+    const compMobile = document.getElementById('comp-mobile').value.trim();
+    const compEmail = document.getElementById('comp-email').value.trim();
+    const compDegree = document.getElementById('comp-degree').value;
+
+    if (!compName) { alert("Guest name is required."); btn.textContent = "Confirm Guest Entry"; btn.disabled = false; return; }
+    
+    try {
+      // Mark primary pass as fully used
+      await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: 2, lastCheckin: new Date().toISOString() });
+      
+      // Log the Companion as a new entry with ALL their details
+      await addDoc(collection(db, "log"), { 
+        uid: foundGuestTemp.uid + "-GUEST", 
+        name: compName, 
+        mobile: compMobile,
+        email: compEmail,
+        degree: compDegree, 
+        passType: "Companion Entry", 
+        type: "checked_in", 
+        time: new Date().toISOString() 
+      });
+      showSuccess();
+    } catch(e) { alert("Error checking in."); btn.textContent = "Confirm Guest Entry"; btn.disabled = false; }
+
+  } else {
+    // ── NORMAL LOOKUP ──
+    try {
+      const snapshot = await getDocs(collection(db, "guests"));
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (String(d.uid).toLowerCase() === lookupVal.toLowerCase() || String(d.email).toLowerCase() === lookupVal.toLowerCase()) {
+          foundGuestTemp = d; foundDocIdTemp = doc.id;
+        }
+      });
+
+      if (foundGuestTemp) {
+        const maxEntries = String(foundGuestTemp.passType).toLowerCase().includes('dual') ? 2 : 1;
+        const count = foundGuestTemp.checkinCount || 0;
+        
+        if (count >= maxEntries) {
+           alert("You have already checked in the maximum number of times allowed.");
+           btn.textContent = "Check In"; btn.disabled = false; foundGuestTemp = null; return;
+        }
+
+        if (maxEntries === 2 && count === 1) {
+             // Ask for 2nd person's full details
+             document.getElementById('companion-fields').style.display = 'block';
+             document.getElementById('instruction-text').style.display = 'none';
+             document.getElementById('lookup-input').disabled = true;
+             btn.textContent = "Confirm Guest Entry"; btn.disabled = false;
+             return;
+        }
+
+        // Standard Check in
+        await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: count + 1, lastCheckin: new Date().toISOString() });
+        await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
+        showSuccess();
+        
+      } else {
+        // Not Found -> Switch to Reg Mode
+        isRegistrationMode = true;
+        document.getElementById('reg-fields').style.display = 'block';
+        document.getElementById('instruction-text').style.display = 'none';
+        btn.textContent = "Register & Check In"; btn.disabled = false;
+      }
+    } catch(e) { alert("Network error. Please try again."); btn.textContent = "Check In"; btn.disabled = false; }
+  }
+}
+
+function showSuccess() {
+  document.getElementById('main-card').style.display = 'none';
+  document.getElementById('success-card').style.display = 'block';
+}
+</script>
+</body>
+</html>
