@@ -1157,9 +1157,7 @@ guests=[
   {uid:'2024PG019',name:'Arjun Mehta',   degree:'PG', email:'arjun@example.com',  mobile:'9876543213',passType:'Dual Entry',  checkinCount:0,lastCheckin:null},
   {uid:'2024UG088',name:'Neha Kapoor',   degree:'UG', email:'neha@example.com',   mobile:'9876543214',passType:'Single Entry',checkinCount:0,lastCheckin:null},
 ];
-
-sendGuestsToServer();
-
+  
 renderGuests();
 updateStats();
 </script>
@@ -1237,6 +1235,7 @@ window.processScan = async function(raw) {
   }
   alert("Guests uploaded to Firebase");
 };
+    sendGuestsToServer();
 </script>
 </body>
 </html>
