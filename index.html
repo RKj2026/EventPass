@@ -355,9 +355,47 @@ window.entryLog = [];
 window.recentScans = [];
 let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
 const COOLDOWN=2500;
-let rebuildTimer=null, logoDataUrl='', cameraActive=false;
+let rebuildTimer=null, saveTimer=null, logoDataUrl='', cameraActive=false;
 
 // ══ REAL-TIME SYNC ═════════════════════════════════════════════════
+
+// 1. Sync Event Details & Logo
+onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
+  if (snap.exists()) {
+    const data = snap.data();
+    
+    // Helper to only update input if user isn't currently typing in it (prevents cursor jumping)
+    const safeSet = (id, val) => {
+      const el = document.getElementById(id);
+      if (document.activeElement !== el) el.value = val || '';
+    };
+
+    safeSet('evt-name', data.evtName);
+    safeSet('evt-date', data.evtDate);
+    safeSet('evt-time', data.evtTime);
+    safeSet('evt-venue', data.evtVenue);
+    safeSet('inst-name', data.instName);
+    safeSet('inst-addr', data.instAddr);
+
+    if (data.logoDataUrl !== logoDataUrl) {
+       logoDataUrl = data.logoDataUrl || '';
+       if (logoDataUrl) {
+         document.getElementById('logo-preview').src = logoDataUrl;
+         document.getElementById('logo-preview').style.display = 'block';
+         document.getElementById('logo-placeholder').style.display = 'none';
+         document.getElementById('logo-clear-btn').style.display = 'block';
+       } else {
+         document.getElementById('logo-preview').src = '';
+         document.getElementById('logo-preview').style.display = 'none';
+         document.getElementById('logo-placeholder').style.display = 'block';
+         document.getElementById('logo-clear-btn').style.display = 'none';
+       }
+    }
+    window.buildAllPasses();
+  }
+});
+
+// 2. Sync Attendees
 onSnapshot(collection(db, "guests"), (snapshot) => {
   window.guests = [];
   snapshot.forEach((doc) => { window.guests.push({ id: doc.id, ...doc.data() }); });
@@ -366,6 +404,7 @@ onSnapshot(collection(db, "guests"), (snapshot) => {
   document.getElementById('sync-badge').style.display='inline-block';
 });
 
+// 3. Sync Scanner Log
 const q = query(collection(db, "log"), orderBy("time", "desc"));
 onSnapshot(q, (snapshot) => {
   window.entryLog = [];
@@ -420,7 +459,7 @@ window.switchTab = function(el,name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
-  if(name==='passes') buildAllPasses();
+  if(name==='passes') window.buildAllPasses(); 
   if(name!=='scanner') window.stopScanner();
   if(name==='log') window.renderLog();
 }
@@ -535,6 +574,7 @@ window.manualCheckin = async function(uid){
 const PW=520, PH=820;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
+
 function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrUrl,logoImg){
   const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const c=cv.getContext('2d');
   const isBlue=color==='blue';const topClr=isBlue?'#1e3a8a':'#7f1d1d';const accClr=isBlue?'#2563eb':'#dc2626';
@@ -542,7 +582,10 @@ function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrU
   const HH=210; c.fillStyle=topClr;c.fillRect(0,0,PW,HH);
   c.save();c.fillStyle='rgba(255,255,255,0.05)';c.beginPath();c.moveTo(0,HH-30);c.lineTo(PW*0.55,0);c.lineTo(PW,0);c.lineTo(PW,HH);c.lineTo(0,HH);c.closePath();c.fill();c.restore();
   let textMaxX=PW-20;
+  
+  // ⚡️ FIXED ASPECT RATIO LOGO
   if(logoImg&&logoImg.complete&&logoImg.naturalWidth>0){const scale=Math.min(100/logoImg.naturalWidth,70/logoImg.naturalHeight);const LW=Math.round(logoImg.naturalWidth*scale);const LH=Math.round(logoImg.naturalHeight*scale);const lx=PW-LW-14, ly=12+(70-LH)/2;c.fillStyle='rgba(255,255,255,0.12)';rr(c,lx-5,ly-5,LW+10,LH+10,6);c.fill();try{c.drawImage(logoImg,lx,ly,LW,LH);}catch(e){}textMaxX=lx-10;}
+  
   const PAD=18;c.textAlign='left';
   if(instName){c.fillStyle='#ffffff';c.font='bold 16px -apple-system,sans-serif';wrap(c,instName,textMaxX-PAD).slice(0,2).forEach((l,i)=>c.fillText(l,PAD,32+i*20));}
   if(instAddr){c.fillStyle='rgba(255,255,255,0.60)';c.font='11px -apple-system,sans-serif';wrap(c,instAddr,textMaxX-PAD).slice(0,2).forEach((l,i)=>c.fillText(l,PAD,76+i*15));}
@@ -563,12 +606,12 @@ function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrU
   c.beginPath();c.moveTo(PAD,infoY+74);c.lineTo(PW-PAD,infoY+74);c.stroke();field('MOBILE',g.mobile||'—',PAD,infoY+84,hw);
   c.beginPath();c.moveTo(PAD,infoY+114);c.lineTo(PW-PAD,infoY+114);c.stroke();
   
-  // ⚡️ LARGER QR CODE LOGIC (280px up from 220px)
+  // ⚡️ LARGER QR CODE
   const QS=280, QX=Math.round((PW-QS)/2), QY=465;
   c.fillStyle='#f9fafb';rr(c,QX-14,QY-14,QS+28,QS+46,12);c.fill();c.strokeStyle=accClr;c.lineWidth=3;rr(c,QX-14,QY-14,QS+28,QS+46,12);c.stroke();
   c.fillStyle=accClr;rr(c,QX-14,QY-14,QS+28,10,12);c.fill();c.fillRect(QX-14,QY-8,QS+28,8);
   if(qrUrl){const qi=new Image();qi.onload=()=>{c.drawImage(qi,QX,QY,QS,QS);};qi.src=qrUrl;}
-  c.fillStyle='#374151';c.font='bold 16px monospace';c.textAlign='center';c.fillText(g.uid,PW/2,QY+QS+24); // Adjusted text placement for larger box
+  c.fillStyle='#374151';c.font='bold 16px monospace';c.textAlign='center';c.fillText(g.uid,PW/2,QY+QS+24);
   
   c.fillStyle=topClr;c.fillRect(0,PH-26,PW,26);c.fillStyle='rgba(255,255,255,0.55)';c.font='10px -apple-system,sans-serif';c.textAlign='center';c.fillText(isBlue?'Valid for two entries · Not transferable':'Valid for one entry only · Not transferable',PW/2,PH-10);
   return cv;
@@ -585,7 +628,31 @@ window.getSettings = function(){
   };
 }
 
-window.scheduleRebuild = function(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(window.buildAllPasses,800);}
+// ⚡️ PUSH SETTINGS TO FIREBASE
+window.saveSettingsToFirebase = async function() {
+  const s = {
+    evtName: document.getElementById('evt-name').value.trim(),
+    evtDate: document.getElementById('evt-date').value.trim(),
+    evtTime: document.getElementById('evt-time').value.trim(),
+    evtVenue: document.getElementById('evt-venue').value.trim(),
+    instName: document.getElementById('inst-name').value.trim(),
+    instAddr: document.getElementById('inst-addr').value.trim(),
+    logoDataUrl: logoDataUrl || ''
+  };
+  try {
+    await setDoc(doc(db, "config", "eventDetails"), s);
+  } catch(e) { console.error("Save error", e); }
+};
+
+window.scheduleRebuild = function(){
+  clearTimeout(rebuildTimer);
+  rebuildTimer=setTimeout(window.buildAllPasses,800);
+  
+  // Auto-save to Firebase 1.5 seconds after typing stops
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(window.saveSettingsToFirebase, 1500);
+}
+
 window.buildAllPasses = function(){
   const grid=document.getElementById('pass-grid');
   if(!window.guests.length){grid.innerHTML='<div class="empty">Import attendees first.</div>';return;}
@@ -599,7 +666,6 @@ function genQRs(s,logoImg){
   window.guests.forEach((g,idx)=>{
     const tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;';
     document.body.appendChild(tmp);
-    // ⚡️ LARGER QR GENERATION CALL (280px)
     try{new QRCode(tmp,{text:g.uid,width:280,height:280,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
     setTimeout(()=>{
       const qi=tmp.querySelector('img');const qc=tmp.querySelector('canvas');
@@ -855,7 +921,7 @@ window.renderLog = function(){
   </div>`).join('');
 }
 
-  window.exportLog = function(){
+window.exportLog = function(){
   if(!window.entryLog.length){window.showToast('No entries yet');return;}
   const rows=[['Time','Name','Unique ID','Degree','Pass Type','Event'],
     ...window.entryLog.map(l=>[new Date(l.time).toLocaleString(),l.name,l.uid,l.degree,l.passType,l.type])];
@@ -879,6 +945,10 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');co
 
 window.handleLogo = function(e){
   const file=e.target.files[0];if(!file)return;
+  if(file.size > 800000) {
+     window.showToast("Image too large! Please use a logo under 800KB.");
+     return;
+  }
   const r=new FileReader();
   r.onload=ev=>{
     logoDataUrl=ev.target.result;
@@ -886,7 +956,7 @@ window.handleLogo = function(e){
     document.getElementById('logo-preview').style.display='block';
     document.getElementById('logo-placeholder').style.display='none';
     document.getElementById('logo-clear-btn').style.display='block';
-    window.scheduleRebuild();
+    window.saveSettingsToFirebase();
   };
   r.readAsDataURL(file);e.target.value='';
 };
@@ -897,8 +967,9 @@ window.clearLogo = function(){
   document.getElementById('logo-preview').style.display='none';
   document.getElementById('logo-placeholder').style.display='block';
   document.getElementById('logo-clear-btn').style.display='none';
-  window.scheduleRebuild();
+  window.saveSettingsToFirebase();
 };
+
 document.addEventListener('touchstart', function unlockAudio(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('touchstart', unlockAudio);}, {once:true});
 document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});
 
