@@ -542,7 +542,7 @@ function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrU
   const HH=210; c.fillStyle=topClr;c.fillRect(0,0,PW,HH);
   c.save();c.fillStyle='rgba(255,255,255,0.05)';c.beginPath();c.moveTo(0,HH-30);c.lineTo(PW*0.55,0);c.lineTo(PW,0);c.lineTo(PW,HH);c.lineTo(0,HH);c.closePath();c.fill();c.restore();
   let textMaxX=PW-20;
-  if(logoImg&&logoImg.complete&&logoImg.naturalWidth>0){const LH=Math.min(70, HH-20);const LW=Math.min(Math.round(LH*(logoImg.naturalWidth/logoImg.naturalHeight)),100);const lx=PW-LW-14, ly=12;c.fillStyle='rgba(255,255,255,0.12)';rr(c,lx-5,ly-5,LW+10,LH+10,6);c.fill();try{c.drawImage(logoImg,lx,ly,LW,LH);}catch(e){}textMaxX=lx-10;}
+  if(logoImg&&logoImg.complete&&logoImg.naturalWidth>0){const scale=Math.min(100/logoImg.naturalWidth,70/logoImg.naturalHeight);const LW=Math.round(logoImg.naturalWidth*scale);const LH=Math.round(logoImg.naturalHeight*scale);const lx=PW-LW-14, ly=12+(70-LH)/2;c.fillStyle='rgba(255,255,255,0.12)';rr(c,lx-5,ly-5,LW+10,LH+10,6);c.fill();try{c.drawImage(logoImg,lx,ly,LW,LH);}catch(e){}textMaxX=lx-10;}
   const PAD=18;c.textAlign='left';
   if(instName){c.fillStyle='#ffffff';c.font='bold 16px -apple-system,sans-serif';wrap(c,instName,textMaxX-PAD).slice(0,2).forEach((l,i)=>c.fillText(l,PAD,32+i*20));}
   if(instAddr){c.fillStyle='rgba(255,255,255,0.60)';c.font='11px -apple-system,sans-serif';wrap(c,instAddr,textMaxX-PAD).slice(0,2).forEach((l,i)=>c.fillText(l,PAD,76+i*15));}
@@ -877,9 +877,28 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)window.handleFile({target:{files:[f]}});});
 
-window.handleLogo = handleLogo;
-window.clearLogo = clearLogo;
+window.handleLogo = function(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    logoDataUrl=ev.target.result;
+    document.getElementById('logo-preview').src=logoDataUrl;
+    document.getElementById('logo-preview').style.display='block';
+    document.getElementById('logo-placeholder').style.display='none';
+    document.getElementById('logo-clear-btn').style.display='block';
+    window.scheduleRebuild();
+  };
+  r.readAsDataURL(file);e.target.value='';
+};
 
+window.clearLogo = function(){
+  logoDataUrl='';
+  document.getElementById('logo-preview').src='';
+  document.getElementById('logo-preview').style.display='none';
+  document.getElementById('logo-placeholder').style.display='block';
+  document.getElementById('logo-clear-btn').style.display='none';
+  window.scheduleRebuild();
+};
 document.addEventListener('touchstart', function unlockAudio(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('touchstart', unlockAudio);}, {once:true});
 document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});
 
