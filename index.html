@@ -40,6 +40,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .progress-wrap { width: 100%; background: var(--bg3); border: 1px solid var(--border); height: 10px; border-radius: 99px; overflow: hidden; }
 .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.4s ease; }
 
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px;flex-shrink:0;background:#ffffff;border-bottom:1px solid var(--border);}
+.stat{background:var(--bg3);border-radius:var(--radius-sm);padding:9px 6px;text-align:center;border:1px solid var(--border);}
+.stat-val{font-size:19px;font-weight:700;line-height:1;color:var(--text);}.stat-lbl{font-size:9px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:0.4px;font-weight:600;}
+
 .tabs{display:flex;padding:0 14px;gap:2px;border-bottom:1px solid var(--border);flex-shrink:0;background:#ffffff;}
 .tab{flex:1;padding:12px 2px;text-align:center;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.15s;user-select:none;text-transform:uppercase;letter-spacing:0.5px;}
 .tab.active{color:var(--navy);border-bottom-color:var(--navy);}
@@ -107,7 +111,8 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
 .sc-bl{bottom:0;left:0;border-width:0 0 4px 4px;border-radius:0 0 0 4px;}
 .scan-line{position:absolute;left:4%;right:4%;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite;box-shadow:0 0 10px var(--accent);}
 @keyframes scanline{0%,100%{top:5%}50%{top:91%}}
-
+.scanner-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.scanner-status{font-size:12px;font-weight:600;color:var(--text2);flex:1;}
 .scan-result{border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:12px;display:none;box-shadow:var(--shadow);}
 .scan-result.show{display:block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes popIn { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -173,6 +178,13 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
       <div class="stat-pct" id="p-pct">0%</div>
     </div>
     <div class="progress-wrap"><div class="progress-bar" id="p-bar"></div></div>
+  </div>
+  
+  <div class="stats-row">
+    <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-val" id="s-checked" style="color:var(--green)">0</div><div class="stat-lbl">Checked In</div></div>
+    <div class="stat"><div class="stat-val" id="s-single" style="color:var(--red)">0</div><div class="stat-lbl">Single</div></div>
+    <div class="stat"><div class="stat-val" id="s-dual" style="color:var(--blue)">0</div><div class="stat-lbl">Dual</div></div>
   </div>
 
   <div class="tabs">
@@ -372,15 +384,15 @@ let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
 const COOLDOWN=2500; let rebuildTimer=null, saveTimer=null, logoDataUrl='', cameraActive=false;
 let lastScanDoc = null; let undoTimeout = null;
 
-// ── Offline Detection ──
 window.addEventListener('offline', () => document.getElementById('offline-banner').style.display = 'block');
 window.addEventListener('online', () => document.getElementById('offline-banner').style.display = 'none');
 
-// ── Validation Helpers ──
 function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function valMob(m){ return /^\d{10}$/.test(m); }
 
-// ══ REAL-TIME SYNC ═════════════════════════════════════════════════
+// String Cleaning Helper (Strips invisible Excel spaces and newlines)
+function cleanStr(s) { return String(s||'').replace(/[\r\n\t]/g, '').trim(); }
+
 onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
   if (snap.exists()) {
     const data = snap.data();
@@ -441,11 +453,29 @@ window.switchTab = function(el,name){
 }
 
 function updateStats(){
-  const t = window.guests.length, c = window.guests.filter(g=>g.checkinCount>0).length;
-  const pct = t > 0 ? Math.round((c/t)*100) : 0;
-  document.getElementById('p-checked').innerHTML = `${c} <span>/ ${t} checked in</span>`;
-  document.getElementById('p-pct').textContent = `${pct}%`;
-  document.getElementById('p-bar').style.width = `${pct}%`;
+  let totalCapacity = 0;
+  let totalCheckedIn = 0;
+  let singleCount = 0;
+  let dualCount = 0;
+
+  window.guests.forEach(g => {
+    const dual = window.isDual(g);
+    totalCapacity += dual ? 2 : 1;
+    totalCheckedIn += (g.checkinCount || 0);
+    if(dual) dualCount++; else singleCount++;
+  });
+
+  const pct = totalCapacity > 0 ? Math.round((totalCheckedIn / totalCapacity) * 100) : 0;
+  
+  if(document.getElementById('p-checked')) document.getElementById('p-checked').innerHTML = `${totalCheckedIn} <span>/ ${totalCapacity} checked in</span>`;
+  if(document.getElementById('p-pct')) document.getElementById('p-pct').textContent = `${pct}%`;
+  if(document.getElementById('p-bar')) document.getElementById('p-bar').style.width = `${pct}%`;
+
+  if(document.getElementById('s-total')) document.getElementById('s-total').textContent = totalCapacity;
+  if(document.getElementById('s-checked')) document.getElementById('s-checked').textContent = totalCheckedIn;
+  if(document.getElementById('s-single')) document.getElementById('s-single').textContent = singleCount;
+  if(document.getElementById('s-dual')) document.getElementById('s-dual').textContent = dualCount;
+  if(document.getElementById('header-badge')) document.getElementById('header-badge').textContent = totalCapacity + ' attendee' + (totalCapacity !== 1 ? 's' : '');
 }
 
 window.handleFile = async function(e){
@@ -464,12 +494,12 @@ window.handleFile = async function(e){
         const mobKey=fk(['mobileno','mobile','phone']); const pasKey=fk(['passtype','pass','entry','type']);
         const schKey=fk(['school','college','department']); const yrKey=fk(['year','passing']);
         
-        const name=String(row[nameKey||keys[1]]||'').trim();if(!name)continue;
-        const uid=String(row[uidKey||keys[0]]||'').trim()||('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase());
+        const name = cleanStr(row[nameKey||keys[1]]); if(!name)continue;
+        const uid = cleanStr(row[uidKey||keys[0]]) || ('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase());
         
         await setDoc(doc(db, "guests", uid), {
-          uid, name, degree:String(row[degKey]||'UG').trim()||'UG', school:String(row[schKey]||'').trim(), passYear:String(row[yrKey]||'').trim(),
-          email:String(row[emlKey]||'').trim(), mobile:String(row[mobKey]||'').trim(), passType:String(row[pasKey]||'').toLowerCase().includes('dual')?'Dual Entry':'Single Entry',
+          uid, name, degree:cleanStr(row[degKey]||'UG')||'UG', school:cleanStr(row[schKey]||''), passYear:cleanStr(row[yrKey]||''),
+          email:cleanStr(row[emlKey]||''), mobile:cleanStr(row[mobKey]||''), passType:String(row[pasKey]||'').toLowerCase().includes('dual')?'Dual Entry':'Single Entry',
           checkinCount:0, lastCheckin:null
         });
         added++;
@@ -481,9 +511,9 @@ window.handleFile = async function(e){
 }
 
 window.addManual = async function(){
-  const uid=document.getElementById('add-uid').value.trim(); const name=document.getElementById('add-name').value.trim();
-  const school=document.getElementById('add-school').value; const year=document.getElementById('add-year').value.trim();
-  const email=document.getElementById('add-email').value.trim(); const mobile=document.getElementById('add-mobile').value.trim();
+  const uid=cleanStr(document.getElementById('add-uid').value); const name=cleanStr(document.getElementById('add-name').value);
+  const school=document.getElementById('add-school').value; const year=cleanStr(document.getElementById('add-year').value);
+  const email=cleanStr(document.getElementById('add-email').value); const mobile=cleanStr(document.getElementById('add-mobile').value);
   const degree=document.getElementById('add-degree').value; const passType=document.getElementById('add-passtype').value;
   if(!uid||!name||!school||!year||!email||!mobile){ window.showToast('All fields are mandatory!'); return; }
   if(!valEmail(email)) { window.showToast('Invalid Email ID!'); return; }
@@ -493,7 +523,6 @@ window.addManual = async function(){
   ['add-uid','add-name','add-year','add-email','add-mobile'].forEach(id=>document.getElementById(id).value=''); document.getElementById('add-school').value=''; window.showToast('Attendee added ✓');
 }
 
-// ── BATCH DELETE FIX ──
 window.clearAll = async function(){ 
   if(window.guests.length && !confirm('⚠️ Are you sure? This will PERMANENTLY DELETE all attendees and logs.')) return; 
   window.showToast("Clearing database...");
@@ -523,7 +552,6 @@ window.renderGuests = function(){
   }).join('');
 }
 
-// ── Pass UI (Premium) ────────────────────────
 const PW=520, PH=850;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
@@ -590,7 +618,6 @@ window.stopScanner = function(resetUI=true){ if(scanInterval){clearInterval(scan
 function startScanning(video){ const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:true}); scanInterval=setInterval(()=>{ if(video.readyState!==video.HAVE_ENOUGH_DATA)return; canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height); const d=ctx.getImageData(0,0,canvas.width,canvas.height);const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'}); if(code?.data){const now=Date.now();if(now-lastScanTime<COOLDOWN)return;lastScanTime=now;window.processScan(code.data);} },100); }
 window.toggleTorch = async function(){ if(!videoStream)return;torchOn=!torchOn; try{await videoStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torchOn}]});}catch(e){} document.getElementById('torch-btn').textContent=torchOn?'🔆':'🔦'; }
 
-// ── LIVE SEARCH ──
 window.liveSearch = function(){
   const v=document.getElementById('manual-input').value.trim().toLowerCase();
   const dd=document.getElementById('search-dropdown');
@@ -606,7 +633,7 @@ window.manualScan = function(){ const v=document.getElementById('manual-input').
 
 // ── CORE SCANNER LOGIC ──
 window.processScan = async function(raw){
-  const uid = raw.trim();
+  const uid = cleanStr(raw);
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
@@ -636,8 +663,6 @@ window.processScan = async function(raw){
 
     const m = document.createElement('div'); m.id = 'comp-modal';
     m.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    
-    // Clicking backdrop closes modal
     m.addEventListener('click', (e) => { if(e.target === m) document.getElementById('cm-cancel').click(); });
 
     m.innerHTML = `
@@ -706,7 +731,6 @@ window.logToFirebase = async function(g, type){ try { const d = await addDoc(col
 function showDetailGrid(g){ const dual=window.isDual(g); document.getElementById('res-detail').innerHTML=`<div class="scan-info-item"><div class="scan-info-lbl">Unique ID</div><div class="scan-info-val" style="font-family:monospace;font-size:11px">${window.esc(g.uid)}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Degree</div><div class="scan-info-val">${window.esc(g.degree||'—')}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Pass Type</div><div class="scan-info-val" style="color:${dual?'#2563eb':'#dc2626'}">${window.esc(g.passType)}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Entries Used</div><div class="scan-info-val">${g.checkinCount||0} / ${dual?2:1}</div></div>`; }
 function vibrate(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
 
-// ── UNDO LOGIC ──
 function triggerUndo(guest, incrementCount, logIds) {
   clearTimeout(undoTimeout);
   lastScanDoc = { guestId: guest.uid, countAdded: incrementCount, logIds: logIds };
@@ -737,7 +761,6 @@ window.showToast = function(msg){ let t=document.getElementById('toast'); if(!t)
 
 const dz=document.getElementById('drop-zone'); dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}); dz.addEventListener('dragleave',()=>dz.classList.remove('drag')); dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)window.handleFile({target:{files:[f]}});});
 
-// ── AUTO-COMPRESS LOGO UPLOAD (No Firebase Storage Needed) ──
 window.handleLogo = function(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -749,43 +772,24 @@ window.handleLogo = function(e){
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
+      let width = img.width; let height = img.height;
       const MAX_SIZE = 400;
-      if (width > height && width > MAX_SIZE) {
-        height *= MAX_SIZE / width;
-        width = MAX_SIZE;
-      } else if (height > MAX_SIZE) {
-        width *= MAX_SIZE / height;
-        height = MAX_SIZE;
-      }
+      if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
 
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, width, height);
+      canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, width, height);
 
       logoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-      document.getElementById('logo-preview').src = logoDataUrl;
-      document.getElementById('logo-preview').style.display = 'block';
-      document.getElementById('logo-placeholder').style.display = 'none';
-      document.getElementById('logo-clear-btn').style.display = 'block';
+      document.getElementById('logo-preview').src = logoDataUrl; document.getElementById('logo-preview').style.display = 'block';
+      document.getElementById('logo-placeholder').style.display = 'none'; document.getElementById('logo-clear-btn').style.display = 'block';
+      document.getElementById('app-header-logo').src = logoDataUrl; document.getElementById('app-header-logo').style.display = 'block';
       
-      document.getElementById('app-header-logo').src = logoDataUrl;
-      document.getElementById('app-header-logo').style.display = 'block';
-      
-      window.saveSettingsToFirebase();
-      window.showToast("Logo saved successfully ✓");
+      window.saveSettingsToFirebase(); window.showToast("Logo saved successfully ✓");
     };
     img.src = event.target.result;
   };
-  reader.readAsDataURL(file);
-  e.target.value = '';
+  reader.readAsDataURL(file); e.target.value = '';
 };
 
 window.clearLogo = function(){ logoDataUrl=''; document.getElementById('logo-preview').src=''; document.getElementById('logo-preview').style.display='none'; document.getElementById('logo-placeholder').style.display='block'; document.getElementById('logo-clear-btn').style.display='none'; document.getElementById('app-header-logo').src = ''; document.getElementById('app-header-logo').style.display = 'none'; window.saveSettingsToFirebase(); };
