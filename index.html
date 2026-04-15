@@ -554,7 +554,7 @@ window.renderGuests = function(){
 
 const PW=520, PH=850;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
-function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)linespush(line);return lines;}
+function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
 
 function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrUrl,logoImg){
   const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const c=cv.getContext('2d');
@@ -705,7 +705,6 @@ window.processScan = async function(raw){
     
     document.getElementById('cm-cancel').onclick = () => { document.body.removeChild(m); resBox.className = 'scan-result'; };
     
-    // Check In Primary ONLY Flow
     if (!isCompanionOnly) {
       document.getElementById('cm-primary-only').onclick = async () => {
         document.body.removeChild(m);
@@ -720,7 +719,6 @@ window.processScan = async function(raw){
       };
     }
 
-    // Check In Companion Flow (or Both)
     document.getElementById('cm-submit').onclick = async () => {
       const cName = document.getElementById('cm-name').value.trim(); const cEmail = document.getElementById('cm-email').value.trim(); const cMobile = document.getElementById('cm-mobile').value.trim();
       const isAlumni = document.getElementById('cm-alumni').value;
