@@ -8,17 +8,19 @@
 :root{ --bg:#0f1117; --bg2:#1a1d27; --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.16); --text:#f0f2f8; --text2:#8b90a7; --accent:#4f8ef7; --green:#22c97a; --radius:12px; --radius-sm:8px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
-.container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:400px;text-align:center;}
+.container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:440px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.4);}
 h1{font-size:22px;font-weight:800;margin-bottom:8px;color:var(--text);}
 p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.5;}
-input,select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:15px;padding:12px;outline:none;margin-bottom:16px;transition:0.2s;}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;padding:12px;outline:none;margin-bottom:16px;transition:0.2s;}
 input:focus,select:focus{border-color:var(--accent);}
-.btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;}
+.btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;margin-top:10px;}
 .btn:active{transform:scale(0.98);}
-.success-box{display:none;background:rgba(34,201,122,0.12);border:1px solid rgba(34,201,122,0.3);padding:24px;border-radius:var(--radius);}
+.success-box{display:none;background:rgba(34,201,122,0.12);border:1px solid rgba(34,201,122,0.3);padding:30px;border-radius:var(--radius);}
 .success-icon{font-size:48px;margin-bottom:10px;}
 #reg-fields, #companion-fields{display:none;text-align:left;}
 label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:600;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.section-title{font-size:14px;font-weight:bold;color:var(--accent);margin:20px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px;}
 </style>
 </head>
 <body>
@@ -30,23 +32,41 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
   <input type="text" id="lookup-input" placeholder="e.g. email@example.com or ID">
   
   <div id="reg-fields">
-    <div style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);padding:12px;border-radius:8px;font-size:12px;color:#f5a623;margin-bottom:16px;text-align:center;">
-      We couldn't find your ID. Please fill out the form below to register on the spot.
+    <div style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);padding:12px;border-radius:8px;font-size:12px;color:#f5a623;margin-bottom:20px;text-align:center;">
+      We couldn't find your ID. Please fill out this form to register on the spot.
     </div>
+    
     <label>Full Name *</label><input type="text" id="reg-name" placeholder="John Doe">
+    <label>Email ID *</label><input type="email" id="reg-email" placeholder="Valid Email">
     <label>Mobile Number *</label><input type="tel" id="reg-mobile" placeholder="10-digit number">
-    <label>Degree Type</label>
-    <select id="reg-degree"><option value="UG">Undergraduate (UG)</option><option value="PG">Postgraduate (PG)</option><option value="DIP">Diploma</option></select>
+    
+    <div class="grid-2">
+      <div><label>School *</label><select id="reg-school"><option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option></select></div>
+      <div><label>Passing Year *</label><input type="number" id="reg-year" placeholder="e.g. 2025"></div>
+    </div>
+
+    <div class="grid-2">
+      <div><label>Degree Type *</label><select id="reg-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select></div>
+      <div><label>Pass Type *</label><select id="reg-passtype" onchange="toggleSpotCompanion()"><option value="Single Entry">Single Entry</option><option value="Dual Entry">Dual Entry</option></select></div>
+    </div>
   </div>
 
   <div id="companion-fields">
-    <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);padding:12px;border-radius:8px;font-size:12px;color:#60a5fa;margin-bottom:16px;text-align:center;">
-      Dual Pass detected! You are claiming the 2nd entry. Please provide the guest's details.
+    <div class="section-title">2nd Guest Details (Dual Pass)</div>
+    <div id="comp-alert" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);padding:10px;border-radius:8px;font-size:12px;color:#60a5fa;margin-bottom:16px;text-align:center;">
+      Dual Pass detected! Please provide your guest's full details.
     </div>
-    <label>Guest's Full Name *</label><input type="text" id="comp-name" placeholder="Guest Name">
-    <label>Guest's Mobile</label><input type="tel" id="comp-mobile" placeholder="10-digit number">
-    <label>Guest's Email</label><input type="email" id="comp-email" placeholder="email@example.com">
-    <label>Guest's Degree Type</label>
+
+    <label>Guest Name *</label><input type="text" id="comp-name" placeholder="Guest Full Name">
+    <label>Guest Email *</label><input type="email" id="comp-email" placeholder="Valid Email">
+    <label>Guest Mobile *</label><input type="tel" id="comp-mobile" placeholder="10-digit number">
+    
+    <div class="grid-2">
+      <div><label>Guest School *</label><select id="comp-school"><option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option></select></div>
+      <div><label>Passing Year *</label><input type="number" id="comp-year" placeholder="e.g. 2025"></div>
+    </div>
+    
+    <label>Guest Degree Type *</label>
     <select id="comp-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
   </div>
 
@@ -78,6 +98,16 @@ let isRegistrationMode = false;
 let foundGuestTemp = null;
 let foundDocIdTemp = null;
 
+// Validation Regex
+function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function valMob(m){ return /^\d{10}$/.test(m); }
+
+window.toggleSpotCompanion = function() {
+  const pt = document.getElementById('reg-passtype').value;
+  document.getElementById('companion-fields').style.display = (pt === 'Dual Entry') ? 'block' : 'none';
+  document.getElementById('comp-alert').style.display = 'none'; // Hide lookup alert in spot reg
+}
+
 window.handleAction = async function() {
   const btn = document.getElementById('action-btn');
   const lookupVal = document.getElementById('lookup-input').value.trim();
@@ -88,49 +118,63 @@ window.handleAction = async function() {
   if (isRegistrationMode) {
     // ── SPOT REGISTRATION ──
     const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const mobile = document.getElementById('reg-mobile').value.trim();
-    if (!name || !mobile) { alert("Name and Mobile are required."); btn.textContent = "Register & Check In"; btn.disabled = false; return; }
-    
-    const uid = lookupVal.includes('@') ? ('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase()) : lookupVal;
-    const email = lookupVal.includes('@') ? lookupVal : '';
+    const school = document.getElementById('reg-school').value;
+    const year = document.getElementById('reg-year').value.trim();
+    const degree = document.getElementById('reg-degree').value;
+    const passType = document.getElementById('reg-passtype').value;
 
-    const newGuest = {
-      uid: uid, name: name, mobile: mobile, email: email, degree: document.getElementById('reg-degree').value,
-      passType: "Single Entry", checkinCount: 1, lastCheckin: new Date().toISOString()
-    };
+    if (!name || !email || !mobile || !school || !year) { alert("All Primary Attendee fields are mandatory!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+    if (!valEmail(email)) { alert("Primary Email is invalid!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+    if (!valMob(mobile)) { alert("Primary Mobile must be 10 digits!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+    
+    let cName, cEmail, cMobile, cSchool, cYear, cDegree;
+    if (passType === 'Dual Entry') {
+       cName = document.getElementById('comp-name').value.trim();
+       cEmail = document.getElementById('comp-email').value.trim();
+       cMobile = document.getElementById('comp-mobile').value.trim();
+       cSchool = document.getElementById('comp-school').value;
+       cYear = document.getElementById('comp-year').value.trim();
+       cDegree = document.getElementById('comp-degree').value;
+       
+       if (!cName || !cEmail || !cMobile || !cSchool || !cYear) { alert("All Guest fields are mandatory for Dual Entry!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+       if (!valEmail(cEmail)) { alert("Guest Email is invalid!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+       if (!valMob(cMobile)) { alert("Guest Mobile must be 10 digits!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+    }
+
+    const uid = lookupVal.includes('@') ? ('ATT-'+Math.random().toString(36).substr(2,6).toUpperCase()) : lookupVal;
+    const newGuest = { uid, name, email, mobile, school, passYear: year, degree, passType, checkinCount: (passType==='Dual Entry'?2:1), lastCheckin: new Date().toISOString() };
 
     try {
       await setDoc(doc(db, "guests", uid), newGuest);
-      await addDoc(collection(db, "log"), { uid, name, degree: newGuest.degree, passType: "Single Entry", type: "checked_in", time: new Date().toISOString() });
+      await addDoc(collection(db, "log"), { uid, name, degree, school, passYear: year, email, mobile, passType, type: "checked_in", time: new Date().toISOString() });
+      
+      if(passType === 'Dual Entry') {
+        await addDoc(collection(db, "log"), { uid: uid+"-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() });
+      }
       showSuccess();
     } catch(e) { alert("Error saving data."); btn.textContent = "Register & Check In"; btn.disabled = false; }
     
   } else if (foundGuestTemp) {
-    // ── CONFIRMING 2ND PERSON ON DUAL PASS ──
-    const compName = document.getElementById('comp-name').value.trim();
-    const compMobile = document.getElementById('comp-mobile').value.trim();
-    const compEmail = document.getElementById('comp-email').value.trim();
-    const compDegree = document.getElementById('comp-degree').value;
+    // ── CONFIRMING 2ND PERSON ON DUAL PASS LOOKUP ──
+    const cName = document.getElementById('comp-name').value.trim();
+    const cEmail = document.getElementById('comp-email').value.trim();
+    const cMobile = document.getElementById('comp-mobile').value.trim();
+    const cSchool = document.getElementById('comp-school').value;
+    const cYear = document.getElementById('comp-year').value.trim();
+    const cDegree = document.getElementById('comp-degree').value;
 
-    if (!compName) { alert("Guest name is required."); btn.textContent = "Confirm Guest Entry"; btn.disabled = false; return; }
+    if (!cName || !cEmail || !cMobile || !cSchool || !cYear) { alert("All Guest fields are mandatory!"); btn.textContent = "Check In Both"; btn.disabled = false; return; }
+    if (!valEmail(cEmail)) { alert("Guest Email is invalid!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
+    if (!valMob(cMobile)) { alert("Guest Mobile must be 10 digits!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
     
     try {
-      // Mark primary pass as fully used
       await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: 2, lastCheckin: new Date().toISOString() });
-      
-      // Log the Companion as a new entry with ALL their details
-      await addDoc(collection(db, "log"), { 
-        uid: foundGuestTemp.uid + "-GUEST", 
-        name: compName, 
-        mobile: compMobile,
-        email: compEmail,
-        degree: compDegree, 
-        passType: "Companion Entry", 
-        type: "checked_in", 
-        time: new Date().toISOString() 
-      });
+      await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, school: foundGuestTemp.school||'', passYear: foundGuestTemp.passYear||'', email: foundGuestTemp.email||'', mobile: foundGuestTemp.mobile||'', passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
+      await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid+"-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() });
       showSuccess();
-    } catch(e) { alert("Error checking in."); btn.textContent = "Confirm Guest Entry"; btn.disabled = false; }
+    } catch(e) { alert("Error checking in."); btn.textContent = "Check In Both"; btn.disabled = false; }
 
   } else {
     // ── NORMAL LOOKUP ──
@@ -144,26 +188,28 @@ window.handleAction = async function() {
       });
 
       if (foundGuestTemp) {
-        const maxEntries = String(foundGuestTemp.passType).toLowerCase().includes('dual') ? 2 : 1;
+        const dual = String(foundGuestTemp.passType).toLowerCase().includes('dual');
+        const maxEntries = dual ? 2 : 1;
         const count = foundGuestTemp.checkinCount || 0;
         
         if (count >= maxEntries) {
-           alert("You have already checked in the maximum number of times allowed.");
+           alert("You have already checked in.");
            btn.textContent = "Check In"; btn.disabled = false; foundGuestTemp = null; return;
         }
 
-        if (maxEntries === 2 && count === 1) {
-             // Ask for 2nd person's full details
+        // IMMEDIATELY prompt for companion details on first lookup if Dual
+        if (dual && count === 0) {
              document.getElementById('companion-fields').style.display = 'block';
+             document.getElementById('comp-alert').style.display = 'block';
              document.getElementById('instruction-text').style.display = 'none';
              document.getElementById('lookup-input').disabled = true;
-             btn.textContent = "Confirm Guest Entry"; btn.disabled = false;
+             btn.textContent = "Check In Both"; btn.disabled = false;
              return;
         }
 
-        // Standard Check in
-        await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: count + 1, lastCheckin: new Date().toISOString() });
-        await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
+        // Standard Single Check in
+        await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: 1, lastCheckin: new Date().toISOString() });
+        await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, school: foundGuestTemp.school||'', passYear: foundGuestTemp.passYear||'', email: foundGuestTemp.email||'', mobile: foundGuestTemp.mobile||'', passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
         showSuccess();
         
       } else {
@@ -171,6 +217,7 @@ window.handleAction = async function() {
         isRegistrationMode = true;
         document.getElementById('reg-fields').style.display = 'block';
         document.getElementById('instruction-text').style.display = 'none';
+        document.getElementById('reg-email').value = lookupVal.includes('@') ? lookupVal : '';
         btn.textContent = "Register & Check In"; btn.disabled = false;
       }
     } catch(e) { alert("Network error. Please try again."); btn.textContent = "Check In"; btn.disabled = false; }
