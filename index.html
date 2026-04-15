@@ -554,7 +554,7 @@ window.renderGuests = function(){
 
 const PW=520, PH=850;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
-function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
+function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)linespush(line);return lines;}
 
 function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrUrl,logoImg){
   const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const c=cv.getContext('2d');
@@ -657,18 +657,21 @@ window.processScan = async function(raw){
     showDetailGrid(guest); vibrate([200,80,200]); soundDuplicate(); return;
   }
 
-  if (dual && currentCount === 0) {
+  if (dual && currentCount < 2) {
     if(document.getElementById('comp-modal')) return; 
+    
+    const isCompanionOnly = (currentCount === 1);
     const opts = `<option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option>`;
 
     const m = document.createElement('div'); m.id = 'comp-modal';
-    m.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    m.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
     m.addEventListener('click', (e) => { if(e.target === m) document.getElementById('cm-cancel').click(); });
 
     m.innerHTML = `
-      <div style="background:#ffffff;padding:24px;border-radius:12px;width:100%;max-width:380px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+      <div style="background:#ffffff;padding:24px;border-radius:12px;width:100%;max-width:380px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">
         <h3 style="margin-bottom:6px;font-size:18px;font-weight:800;color:#1e3a8a;">Dual Pass Registration</h3>
-        <p style="font-size:12px;color:#4b5563;margin-bottom:16px;">Primary: <b style="color:#111827">${guest.name}</b><br>Please enter the 2nd guest's details.</p>
+        <p style="font-size:12px;color:#4b5563;margin-bottom:16px;">Primary: <b style="color:#111827">${window.esc(guest.name)}</b><br>${isCompanionOnly ? "Primary is already checked in. Enter guest details:" : "Enter the 2nd guest's details (if present)."}</p>
+        
         <label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Guest Name *</label>
         <input type="text" id="cm-name" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;">
         <label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Email ID *</label>
@@ -679,6 +682,7 @@ window.processScan = async function(raw){
         <select id="cm-alumni" onchange="document.getElementById('cm-alumni-fields').style.display = this.value === 'Yes' ? 'block' : 'none';" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;">
           <option value="Yes">Yes, Alumni</option><option value="No">No, Non-Alumni</option>
         </select>
+        
         <div id="cm-alumni-fields">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div><label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">School *</label><select id="cm-school" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;">${opts}</select></div>
@@ -687,14 +691,36 @@ window.processScan = async function(raw){
           <label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Degree Type *</label>
           <select id="cm-degree" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
         </div>
-        <div style="display:flex;gap:10px;margin-top:8px;">
-          <button id="cm-cancel" style="flex:1;padding:12px;border-radius:6px;border:1px solid #d1d5db;background:transparent;color:#4b5563;font-weight:700;cursor:pointer;">Cancel Scan</button>
-          <button id="cm-submit" style="flex:1;padding:12px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer;">Check In Both</button>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+          ${!isCompanionOnly ? `<button id="cm-primary-only" style="padding:10px;border-radius:6px;border:2px solid #1e3a8a;background:transparent;color:#1e3a8a;font-weight:800;cursor:pointer;">Check In Primary ONLY (Guest arrives later)</button>` : ''}
+          <div style="display:flex;gap:8px;">
+            <button id="cm-cancel" style="flex:1;padding:12px;border-radius:6px;border:1px solid #d1d5db;background:transparent;color:#4b5563;font-weight:700;cursor:pointer;">Cancel Scan</button>
+            <button id="cm-submit" style="flex:1;padding:12px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer;">${isCompanionOnly ? 'Check In Guest' : 'Check In BOTH'}</button>
+          </div>
         </div>
       </div>
     `;
     document.body.appendChild(m); document.getElementById('cm-name').focus();
+    
     document.getElementById('cm-cancel').onclick = () => { document.body.removeChild(m); resBox.className = 'scan-result'; };
+    
+    // Check In Primary ONLY Flow
+    if (!isCompanionOnly) {
+      document.getElementById('cm-primary-only').onclick = async () => {
+        document.body.removeChild(m);
+        resBox.classList.add('ok'); document.getElementById('res-icon').innerHTML = '✓';
+        document.getElementById('res-name').textContent = guest.name; 
+        document.getElementById('res-sub').textContent = 'Primary Checked In (1 of 2)';
+        showDetailGrid({ ...guest, checkinCount: 1 }); vibrate([60]); soundSuccess();
+        
+        await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 1, lastCheckin: new Date().toISOString() });
+        const logId = await window.logToFirebase(guest, 'checked_in');
+        triggerUndo(guest, 1, [logId]);
+      };
+    }
+
+    // Check In Companion Flow (or Both)
     document.getElementById('cm-submit').onclick = async () => {
       const cName = document.getElementById('cm-name').value.trim(); const cEmail = document.getElementById('cm-email').value.trim(); const cMobile = document.getElementById('cm-mobile').value.trim();
       const isAlumni = document.getElementById('cm-alumni').value;
@@ -707,15 +733,21 @@ window.processScan = async function(raw){
       document.body.removeChild(m);
       
       resBox.classList.add('ok'); document.getElementById('res-icon').innerHTML = '✓';
-      document.getElementById('res-name').textContent = guest.name + " & " + cName; document.getElementById('res-sub').textContent = 'Dual Entry Authorized';
+      document.getElementById('res-name').textContent = guest.name + " & " + cName; 
+      document.getElementById('res-sub').textContent = isCompanionOnly ? 'Guest Checked In' : 'Dual Entry Authorized';
       showDetailGrid({ ...guest, checkinCount: 2 }); vibrate([60]); soundSuccess();
       
       await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 2, lastCheckin: new Date().toISOString() });
-      const log1 = await window.logToFirebase(guest, 'checked_in');
+      
+      let log1 = null;
+      if (!isCompanionOnly) {
+        log1 = await window.logToFirebase(guest, 'checked_in');
+      }
+      
       let log2 = null;
       try { const d = await addDoc(collection(db, "log"), { uid: guest.uid + "-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() }); log2 = d.id; } catch(e) { console.error(e); }
       
-      triggerUndo(guest, 2, [log1, log2]);
+      triggerUndo(guest, isCompanionOnly ? 1 : 2, [log1, log2]);
     };
     return;
   }
@@ -723,7 +755,6 @@ window.processScan = async function(raw){
   resBox.classList.add('ok'); document.getElementById('res-icon').innerHTML = '✓'; document.getElementById('res-name').textContent = guest.name; document.getElementById('res-sub').textContent = 'Entry allowed'; showDetailGrid({ ...guest, checkinCount: 1 }); vibrate([60]); soundSuccess();
   await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 1, lastCheckin: new Date().toISOString() }); 
   const logId = await window.logToFirebase(guest, 'checked_in');
-  
   triggerUndo(guest, 1, [logId]);
 }
 
