@@ -34,9 +34,10 @@ input.has-error, select.has-error { border-color: var(--accent) !important; back
 .result-card{display:none;padding:10px 0;}
 .success-bg { background: #d1fae5; border: 1px solid rgba(5,150,105,0.3); }
 .dup-bg { background: #fef3c7; border: 1px solid rgba(217,119,6,0.3); }
+.fail-bg { background: #fef2f2; border: 1px solid rgba(220,38,38,0.3); }
 .result-icon{font-size:54px;margin-bottom:10px;}
 
-#reg-fields, #companion-fields{display:none;text-align:left; animation: fadeIn 0.3s ease;}
+#companion-fields{display:none;text-align:left; animation: fadeIn 0.3s ease;}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:700;}
@@ -78,26 +79,6 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
     <input type="text" id="lookup-input" placeholder="e.g. email@example.com or ID" autofocus oninput="clearErr(this)">
     <span class="error-text" id="lookup-input-err"></span>
   </div>
-  
-  <div id="reg-fields">
-    <div style="background:#fef3c7;border:1px solid rgba(217,119,6,0.3);padding:12px;border-radius:8px;font-size:12px;color:#d97706;margin-bottom:20px;text-align:center;font-weight:600;">
-      We couldn't find your ID. Please register on the spot.
-    </div>
-    
-    <div class="form-group"><label>Full Name *</label><input type="text" id="reg-name" placeholder="John Doe" oninput="clearErr(this)"><span class="error-text" id="reg-name-err"></span></div>
-    <div class="form-group"><label>Email ID *</label><input type="email" id="reg-email" placeholder="Valid Email" oninput="clearErr(this)"><span class="error-text" id="reg-email-err"></span></div>
-    <div class="form-group"><label>Mobile Number *</label><input type="tel" id="reg-mobile" placeholder="10-digit number" oninput="clearErr(this)"><span class="error-text" id="reg-mobile-err"></span></div>
-    
-    <div class="grid-2">
-      <div class="form-group"><label>School *</label><select id="reg-school" onchange="clearErr(this)"><option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option></select><span class="error-text" id="reg-school-err"></span></div>
-      <div class="form-group"><label>Passing Year *</label><input type="number" id="reg-year" placeholder="e.g. 2025" oninput="clearErr(this)"><span class="error-text" id="reg-year-err"></span></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="form-group"><label>Degree Type *</label><select id="reg-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select><span class="error-text"></span></div>
-      <div class="form-group"><label>Pass Type *</label><select id="reg-passtype" onchange="toggleSpotCompanion()"><option value="Single Entry">Single Entry</option><option value="Dual Entry">Dual Entry</option></select><span class="error-text"></span></div>
-    </div>
-  </div>
 
   <div id="companion-fields">
     <div class="section-title">2nd Guest Details (Dual Pass)</div>
@@ -126,6 +107,13 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
   <button class="btn" id="action-btn" onclick="handleAction()" data-default="Check In">
     <div class="spinner" id="btn-spin"></div><span id="btn-text">Check In</span>
   </button>
+</div>
+
+<div class="container result-card fail-bg" id="not-found-card">
+  <div class="success-icon">❌</div>
+  <h1 style="color:var(--accent)">Not Registered</h1>
+  <p style="margin-bottom:0;color:#991b1b;font-weight:600;">We couldn't find a matching ticket for this email or ID.<br><br>Please approach the Registration Desk for manual on-spot registration after paying the registration fee.</p>
+  <button class="btn" style="background:var(--accent);margin-top:20px;" onclick="resetForm()">Try Another ID</button>
 </div>
 
 <div class="container result-card success-bg" id="success-card">
@@ -160,7 +148,7 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, setDoc, updateDoc, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
@@ -174,17 +162,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// State vars
-let isRegistrationMode = false;
 let foundGuestTemp = null;
 let foundDocIdTemp = null;
 window.eventConfig = {};
 
-// Validation helpers
 function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function valMob(m){ return /^\d{10}$/.test(m); }
+function cleanStr(s) { return String(s||'').replace(/[\r\n\t]/g, '').trim(); }
 
-// UI Helpers
 window.clearErr = function(el) { el.classList.remove('has-error'); const err = document.getElementById(el.id+'-err'); if(err) err.innerText = ''; }
 function throwErr(id, msg) { const el = document.getElementById(id); el.classList.add('has-error'); const err = document.getElementById(id+'-err'); if(err) err.innerText = msg; }
 
@@ -195,12 +180,6 @@ function setLoading(isLoading) {
   btn.disabled = isLoading;
   spin.style.display = isLoading ? 'block' : 'none';
   txt.innerText = isLoading ? 'Processing...' : btn.getAttribute('data-default');
-}
-
-window.toggleSpotCompanion = function() {
-  const pt = document.getElementById('reg-passtype').value;
-  document.getElementById('companion-fields').style.display = (pt === 'Dual Entry') ? 'block' : 'none';
-  document.getElementById('comp-alert').style.display = 'none'; 
 }
 
 // ── DYNAMIC HEADER SYNC ──
@@ -226,76 +205,14 @@ onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
 });
 
 window.handleAction = async function() {
-  // Honeypot bot trap
   if(document.getElementById('hp-trap').value) return; 
 
-  const lookupVal = document.getElementById('lookup-input').value.trim();
+  const lookupVal = cleanStr(document.getElementById('lookup-input').value);
   if (!lookupVal) { throwErr('lookup-input', 'Please enter your Email or ID'); return; }
   
   setLoading(true);
 
-  if (isRegistrationMode) {
-    // ── SPOT REGISTRATION ──
-    const name = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const mobile = document.getElementById('reg-mobile').value.trim();
-    const school = document.getElementById('reg-school').value;
-    const year = document.getElementById('reg-year').value.trim();
-    const degree = document.getElementById('reg-degree').value;
-    const passType = document.getElementById('reg-passtype').value;
-
-    let hasErr = false;
-    if (!name) { throwErr('reg-name', 'Required'); hasErr = true; }
-    if (!email) { throwErr('reg-email', 'Required'); hasErr = true; } else if(!valEmail(email)) { throwErr('reg-email', 'Invalid format'); hasErr=true;}
-    if (!mobile) { throwErr('reg-mobile', 'Required'); hasErr = true; } else if(!valMob(mobile)) { throwErr('reg-mobile', 'Must be 10 digits'); hasErr=true;}
-    if (!school) { throwErr('reg-school', 'Required'); hasErr = true; }
-    if (!year) { throwErr('reg-year', 'Required'); hasErr = true; }
-    
-    let cName, cEmail, cMobile, cSchool, cYear, cDegree;
-    if (passType === 'Dual Entry') {
-       cName = document.getElementById('comp-name').value.trim();
-       cEmail = document.getElementById('comp-email').value.trim();
-       cMobile = document.getElementById('comp-mobile').value.trim();
-       const isAlum = document.getElementById('comp-alumni').value;
-       cSchool = isAlum === 'Yes' ? document.getElementById('comp-school').value : 'N/A';
-       cYear = isAlum === 'Yes' ? document.getElementById('comp-year').value.trim() : 'N/A';
-       cDegree = isAlum === 'Yes' ? document.getElementById('comp-degree').value : 'N/A';
-       
-       if (!cName) { throwErr('comp-name', 'Required'); hasErr = true; }
-       if (!cEmail) { throwErr('comp-email', 'Required'); hasErr = true; } else if(!valEmail(cEmail)) { throwErr('comp-email', 'Invalid'); hasErr=true;}
-       if (!cMobile) { throwErr('comp-mobile', 'Required'); hasErr = true; } else if(!valMob(cMobile)) { throwErr('comp-mobile', 'Invalid'); hasErr=true;}
-       if (isAlum === 'Yes' && !cSchool) { throwErr('comp-school', 'Required'); hasErr = true; }
-       if (isAlum === 'Yes' && !cYear) { throwErr('comp-year', 'Required'); hasErr = true; }
-    }
-
-    if(hasErr) { setLoading(false); return; }
-
-    // DEDUPLICATION: Check if this email already exists!
-    try {
-        const qEmail = query(collection(db, "guests"), where("email", "==", email));
-        const snap = await getDocs(qEmail);
-        if(!snap.empty) {
-            throwErr('reg-email', 'This email is already registered.');
-            setLoading(false); return;
-        }
-    } catch(e) { /* ignore */ }
-
-    // Generate custom UID since this is a spot reg
-    const uid = 'ATT-'+Math.random().toString(36).substr(2,6).toUpperCase();
-    const newGuest = { uid, name, email, mobile, school, passYear: year, degree, passType, checkinCount: (passType==='Dual Entry'?2:1), lastCheckin: new Date().toISOString() };
-
-    try {
-      await setDoc(doc(db, "guests", uid), newGuest);
-      await addDoc(collection(db, "log"), { uid, name, degree, school, passYear: year, email, mobile, passType, type: "checked_in", time: new Date().toISOString() });
-      if(passType === 'Dual Entry') {
-        await addDoc(collection(db, "log"), { uid: uid+"-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() });
-        showSuccess(name + " & " + cName, passType);
-      } else {
-        showSuccess(name, passType);
-      }
-    } catch(e) { throwErr('lookup-input', 'Network error. Try again.'); setLoading(false); }
-    
-  } else if (foundGuestTemp) {
+  if (foundGuestTemp) {
     // ── CONFIRMING 2ND PERSON ON DUAL PASS LOOKUP ──
     const cName = document.getElementById('comp-name').value.trim();
     const cEmail = document.getElementById('comp-email').value.trim();
@@ -322,31 +239,28 @@ window.handleAction = async function() {
     } catch(e) { throwErr('lookup-input', 'Network error.'); setLoading(false); }
 
   } else {
-    // ── NORMAL LOOKUP (Query exactly, no full scan) ──
+    // ── NORMAL LOOKUP (Case Insensitive Bulletproof Fallback) ──
     try {
-      // 1. Try by exact UID
-      let snap = await getDocs(query(collection(db, "guests"), where("uid", "==", lookupVal)));
-      
-      // 2. If not found, try by Email
-      if(snap.empty) {
-        snap = await getDocs(query(collection(db, "guests"), where("email", "==", lookupVal)));
-      }
-      
-      // 3. Still empty? Maybe they typed the email in uppercase. 
-      if(snap.empty && lookupVal.includes('@')) {
-         snap = await getDocs(query(collection(db, "guests"), where("email", "==", lookupVal.toLowerCase())));
-      }
+      const searchVal = lookupVal.toLowerCase();
+      let match = null; let matchId = null;
 
-      if (!snap.empty) {
-        foundGuestTemp = snap.docs[0].data(); 
-        foundDocIdTemp = snap.docs[0].id;
+      const snap = await getDocs(collection(db, "guests"));
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (cleanStr(d.uid).toLowerCase() === searchVal || cleanStr(d.email).toLowerCase() === searchVal) {
+          match = d; matchId = doc.id;
+        }
+      });
+
+      if (match) {
+        foundGuestTemp = match; 
+        foundDocIdTemp = matchId;
 
         const dual = String(foundGuestTemp.passType).toLowerCase().includes('dual');
         const maxEntries = dual ? 2 : 1;
         const count = foundGuestTemp.checkinCount || 0;
         
         if (count >= maxEntries) {
-           // DUPLICATE FLOW
            showDuplicate(foundGuestTemp, count, maxEntries);
            setLoading(false); foundGuestTemp = null; return;
         }
@@ -362,20 +276,14 @@ window.handleAction = async function() {
              setLoading(false); return;
         }
 
-        // Standard Single Check in
         await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: 1, lastCheckin: new Date().toISOString() });
         await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, school: foundGuestTemp.school||'', passYear: foundGuestTemp.passYear||'', email: foundGuestTemp.email||'', mobile: foundGuestTemp.mobile||'', passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
         showSuccess(foundGuestTemp.name, foundGuestTemp.passType);
         
       } else {
-        // NOT FOUND -> Switch to Registration Mode
-        isRegistrationMode = true;
-        document.getElementById('reg-fields').style.display = 'block';
-        document.getElementById('instruction-text').style.display = 'none';
-        document.getElementById('reg-email').value = lookupVal.includes('@') ? lookupVal : '';
-        
-        const btn = document.getElementById('action-btn');
-        btn.setAttribute('data-default', 'Register & Check In');
+        // NOT FOUND -> Show Red Fail Card
+        document.getElementById('main-card').style.display = 'none';
+        document.getElementById('not-found-card').style.display = 'block';
         setLoading(false);
       }
     } catch(e) { throwErr('lookup-input', 'Connection failed. Please try again.'); setLoading(false); }
@@ -385,6 +293,7 @@ window.handleAction = async function() {
 function showSuccess(name, passType) {
   document.getElementById('main-card').style.display = 'none';
   document.getElementById('duplicate-card').style.display = 'none';
+  document.getElementById('not-found-card').style.display = 'none';
   
   document.getElementById('succ-evt').textContent = window.eventConfig.evtName || 'General Event';
   document.getElementById('succ-name').textContent = name;
@@ -397,6 +306,7 @@ function showSuccess(name, passType) {
 function showDuplicate(guest, current, max) {
   document.getElementById('main-card').style.display = 'none';
   document.getElementById('success-card').style.display = 'none';
+  document.getElementById('not-found-card').style.display = 'none';
   
   document.getElementById('dup-name').textContent = guest.name;
   document.getElementById('dup-pass').textContent = guest.passType;
@@ -406,25 +316,22 @@ function showDuplicate(guest, current, max) {
 }
 
 window.resetForm = function() {
-  // Clear states
-  isRegistrationMode = false;
   foundGuestTemp = null;
   foundDocIdTemp = null;
   
-  // Clear inputs
   document.querySelectorAll('input, select').forEach(el => {
     if(el.id !== 'hp-trap') el.value = '';
     el.classList.remove('has-error');
   });
   document.querySelectorAll('.error-text').forEach(el => el.innerText = '');
   
-  // Reset UI
   document.getElementById('lookup-input').disabled = false;
   document.getElementById('instruction-text').style.display = 'block';
-  document.getElementById('reg-fields').style.display = 'none';
   document.getElementById('companion-fields').style.display = 'none';
+  
   document.getElementById('success-card').style.display = 'none';
   document.getElementById('duplicate-card').style.display = 'none';
+  document.getElementById('not-found-card').style.display = 'none';
   
   const btn = document.getElementById('action-btn');
   btn.setAttribute('data-default', 'Check In');
