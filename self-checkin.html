@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Self Check-In | EventPass</title>
+<title>Self Check-In</title>
 <style>
 :root{ 
   --bg: #f3f4f6; 
@@ -12,14 +12,14 @@
   --border2: #d1d5db; 
   --text: #111827; 
   --text2: #4b5563; 
-  --accent: #dc2626; /* Deep Red */
-  --navy: #1e3a8a;   /* Navy Blue */
+  --accent: #dc2626; 
+  --navy: #1e3a8a;   
   --green: #059669; 
   --radius: 12px; 
   --radius-sm: 8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
 .container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:440px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.08);}
 h1{font-size:24px;font-weight:800;margin-bottom:8px;color:var(--navy);}
 p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.5;}
@@ -33,9 +33,19 @@ input:focus,select:focus{border-color:var(--navy);background:#ffffff;}
 label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:700;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .section-title{font-size:14px;font-weight:800;color:var(--navy);margin:20px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px;text-transform:uppercase;}
+
+/* Dynamic Brand Header Styles */
+#dynamic-brand { text-align:center; margin-bottom:20px; width:100%; max-width:440px; }
+#brand-logo { height:60px; max-width:180px; object-fit:contain; margin:0 auto 10px auto; display:none; border-radius:6px; }
+#brand-title { color:var(--navy); font-weight:800; font-size:22px; display:none; }
 </style>
 </head>
 <body>
+
+<div id="dynamic-brand">
+  <img id="brand-logo" src="" alt="Logo">
+  <h2 id="brand-title"></h2>
+</div>
 
 <div class="container" id="main-card">
   <h1>Attendee Check-In</h1>
@@ -100,7 +110,7 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, setDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, setDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
@@ -116,6 +126,31 @@ const db = getFirestore(app);
 let isRegistrationMode = false;
 let foundGuestTemp = null;
 let foundDocIdTemp = null;
+
+// ── DYNAMIC HEADER SYNC ──
+onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
+  if (snap.exists()) {
+    const data = snap.data();
+    const logoEl = document.getElementById('brand-logo');
+    const titleEl = document.getElementById('brand-title');
+    
+    if(data.logoDataUrl) {
+      logoEl.src = data.logoDataUrl;
+      logoEl.style.display = 'block';
+    } else {
+      logoEl.src = '';
+      logoEl.style.display = 'none';
+    }
+    
+    if(data.instName) {
+      titleEl.textContent = data.instName;
+      titleEl.style.display = 'block';
+    } else {
+      titleEl.textContent = '';
+      titleEl.style.display = 'none';
+    }
+  }
+});
 
 function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function valMob(m){ return /^\d{10}$/.test(m); }
@@ -134,7 +169,6 @@ window.handleAction = async function() {
   btn.textContent = "Processing..."; btn.disabled = true;
 
   if (isRegistrationMode) {
-    // ── SPOT REGISTRATION ──
     const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const mobile = document.getElementById('reg-mobile').value.trim();
@@ -178,7 +212,6 @@ window.handleAction = async function() {
     } catch(e) { alert("Error saving data."); btn.textContent = "Register & Check In"; btn.disabled = false; }
     
   } else if (foundGuestTemp) {
-    // ── CONFIRMING 2ND PERSON ON DUAL PASS LOOKUP ──
     const cName = document.getElementById('comp-name').value.trim();
     const cEmail = document.getElementById('comp-email').value.trim();
     const cMobile = document.getElementById('comp-mobile').value.trim();
@@ -201,7 +234,6 @@ window.handleAction = async function() {
     } catch(e) { alert("Error checking in."); btn.textContent = "Check In Both"; btn.disabled = false; }
 
   } else {
-    // ── NORMAL LOOKUP ──
     try {
       const snapshot = await getDocs(collection(db, "guests"));
       snapshot.forEach(doc => {
