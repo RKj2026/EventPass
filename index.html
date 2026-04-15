@@ -6,38 +6,40 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>EventPass — QR Entry System</title>
+<title>EventPass — Gate Operations</title>
 <style>
 :root{
-  --bg: #f3f4f6;          
-  --bg2: #ffffff;         
-  --bg3: #f9fafb;         
-  --border: #e5e7eb;      
-  --border2: #d1d5db;     
-  --text: #111827;        
-  --text2: #4b5563;       
-  --text3: #6b7280;       
-  --accent: #dc2626;      
-  --accent-hover: #b91c1c;
-  --navy: #1e3a8a;        
+  --bg: #f3f4f6; --bg2: #ffffff; --bg3: #f9fafb; 
+  --border: #e5e7eb; --border2: #d1d5db; 
+  --text: #111827; --text2: #4b5563; --text3: #6b7280; 
+  --accent: #dc2626; --accent-hover: #b91c1c; --navy: #1e3a8a; 
   --green: #059669; --green-bg: #d1fae5;
   --amber: #d97706; --amber-bg: #fef3c7;
-  --red: #dc2626;   --red-bg: #fee2e2;
-  --blue: #2563eb;  --blue-bg: #dbeafe;
+  --red: #dc2626; --red-bg: #fee2e2;
+  --blue: #2563eb; --blue-bg: #dbeafe;
   --radius: 12px; --radius-sm: 8px;
   --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:15px;}
 .app{display:flex;flex-direction:column;height:100vh;max-width:520px;margin:0 auto;background:var(--bg);}
+
+#offline-banner { display: none; background: var(--red); color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; z-index: 9999; }
+
 .header{background:var(--navy);padding:14px 20px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .logo{font-size:20px;font-weight:800;letter-spacing:-0.3px;color:#ffffff;display:flex;align-items:center;gap:8px;}
 .logo img{height:28px;border-radius:4px;display:none;background:#fff;padding:2px;}
 .logo span{color:var(--accent);}
-.header .badge-accent{background:rgba(255,255,255,0.15);color:#ffffff;}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px;flex-shrink:0;background:#ffffff;border-bottom:1px solid var(--border);}
-.stat{background:var(--bg3);border-radius:var(--radius-sm);padding:9px 6px;text-align:center;border:1px solid var(--border);}
-.stat-val{font-size:19px;font-weight:700;line-height:1;color:var(--text);}.stat-lbl{font-size:9px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:0.4px;font-weight:600;}
+
+/* Premium Progress Bar Stats */
+.gate-stats { background: #ffffff; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.stats-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+.stat-main { font-size: 24px; font-weight: 800; color: var(--navy); line-height: 1; }
+.stat-main span { font-size: 13px; font-weight: 600; color: var(--text2); }
+.stat-pct { font-size: 16px; font-weight: 800; color: var(--green); }
+.progress-wrap { width: 100%; background: var(--bg3); border: 1px solid var(--border); height: 10px; border-radius: 99px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.4s ease; }
+
 .tabs{display:flex;padding:0 14px;gap:2px;border-bottom:1px solid var(--border);flex-shrink:0;background:#ffffff;}
 .tab{flex:1;padding:12px 2px;text-align:center;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.15s;user-select:none;text-transform:uppercase;letter-spacing:0.5px;}
 .tab.active{color:var(--navy);border-bottom-color:var(--navy);}
@@ -45,15 +47,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .panel{display:none;}.panel.active{display:block;}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
 .card-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:11px;}
+
 .upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:22px 14px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg3);}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--navy);background:#f0f4ff;}
 .upload-icon{font-size:28px;margin-bottom:6px;}
 .upload-zone h3{font-size:13px;font-weight:700;margin-bottom:3px;color:var(--navy);}
-.upload-zone p{font-size:11px;color:var(--text2);line-height:1.5;}
+
 input[type=text],input[type=email],input[type=tel],input[type=number],select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:9px 10px;outline:none;font-family:inherit;transition:border-color 0.15s;}
-input:focus,select:focus{border-color:var(--navy);background:#ffffff;}::placeholder{color:var(--text3);}
+input:focus,select:focus{border-color:var(--navy);background:#ffffff;}
 label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-weight:600;}
 .form-row{display:grid;gap:8px;margin-bottom:10px;}.cols2{grid-template-columns:1fr 1fr;}
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
 .btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:var(--accent-hover);}.btn-primary:active{transform:scale(0.97);}
 .btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border2);}.btn-ghost:hover{border-color:var(--navy);color:var(--navy);}
@@ -64,24 +68,26 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
 .badge-amber{background:var(--amber-bg);color:var(--amber);}
 .badge-red{background:var(--red-bg);color:var(--red);}
 .badge-blue{background:var(--blue-bg);color:var(--blue);}
-.badge-accent{background:var(--red-bg);color:var(--red);}
+
 .guest-row{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border);}
 .guest-row:last-child{border-bottom:none;}
 .guest-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
 .avatar-red{background:var(--red-bg);color:var(--red);}
 .avatar-blue{background:var(--blue-bg);color:var(--blue);}
+.avatar-gray{background:var(--border);color:var(--text2);}
 .guest-info{flex:1;min-width:0;}
 .guest-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .guest-meta{font-size:10px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.guest-uid{font-size:9px;color:var(--text3);font-family:monospace;margin-top:2px;}
+
 .pass-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
 .pass-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:var(--shadow);}
 .pass-card canvas{border-radius:8px;display:block;width:100%;height:auto;cursor:pointer;border:1px solid var(--border);}
 .pass-actions{display:flex;gap:6px;width:100%;}
-.pass-actions .btn{flex:1;font-size:10px;padding:6px 4px;}
+
 .logo-upload-box{border:1.5px dashed var(--border2);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg3);}
 .logo-upload-box:hover{border-color:var(--navy);}
 .logo-preview{max-width:80px;max-height:50px;display:block;margin:0 auto 6px;border-radius:4px;}
+
 /* ── Scanner ── */
 .cam-screen{text-align:center;padding:20px 10px;}
 .cam-screen .cam-icon{font-size:52px;margin-bottom:10px;}
@@ -101,53 +107,74 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
 .sc-bl{bottom:0;left:0;border-width:0 0 4px 4px;border-radius:0 0 0 4px;}
 .scan-line{position:absolute;left:4%;right:4%;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite;box-shadow:0 0 10px var(--accent);}
 @keyframes scanline{0%,100%{top:5%}50%{top:91%}}
-.scanner-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
-.scanner-status{font-size:12px;font-weight:600;color:var(--text2);flex:1;}
+
 .scan-result{border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:12px;display:none;box-shadow:var(--shadow);}
-.scan-result.show{display:block;}
+.scan-result.show{display:block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes popIn { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
 .scan-result.ok{background:var(--green-bg);border:1px solid rgba(5,150,105,0.3);}
 .scan-result.dup{background:var(--amber-bg);border:1px solid rgba(217,119,6,0.3);}
 .scan-result.fail{background:var(--red-bg);border:1px solid rgba(220,38,38,0.3);}
-.result-icon{font-size:42px;margin-bottom:6px;}
+
+/* Premium Ringed Success Icon */
+.result-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 32px; }
+.ok .result-icon { background: #a7f3d0; color: #059669; border: 4px solid #ffffff; box-shadow: 0 0 0 4px #a7f3d0; }
+.dup .result-icon { background: #fde68a; color: #d97706; border: 4px solid #ffffff; box-shadow: 0 0 0 4px #fde68a; }
+.fail .result-icon { background: #fecaca; color: #dc2626; border: 4px solid #ffffff; box-shadow: 0 0 0 4px #fecaca; }
+
 .result-name{font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text);}
 .result-sub{font-size:12px;font-weight:600;opacity:0.8;}
 .scan-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;text-align:left;}
 .scan-info-item{background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.05);border-radius:6px;padding:8px;}
 .scan-info-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;opacity:0.7;margin-bottom:2px;}
 .scan-info-val{font-size:12px;font-weight:700;color:var(--text);}
-.log-item{display:flex;align-items:center;gap:7px;padding:10px 0;border-bottom:1px solid var(--border);}
+
+/* Live Search Container */
+.manual-search-container { position: relative; margin-top: 9px; }
+.scan-manual{display:flex;gap:7px; }
+.scan-manual input{flex:1;background:#ffffff;}
+#search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+.search-dropdown-item { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.search-dropdown-item:last-child { border-bottom: none; }
+.search-dropdown-item:hover { background: var(--bg3); }
+
+.log-item{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border);}
 .log-item:last-child{border-bottom:none;}
 .log-time{font-size:9px;color:var(--text3);font-family:monospace;min-width:46px;}
 .log-name{flex:1;font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
 .empty{text-align:center;padding:28px 16px;color:var(--text2);font-size:12px;font-weight:500;}
 .search-wrap{position:relative;margin-bottom:10px;}
 .search-wrap input{padding-left:32px;background:#ffffff;}
 .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text3);pointer-events:none;}
-.flex{display:flex;align-items:center;}.gap8{gap:8px;}
-.mb10{margin-bottom:10px;}
-.scan-manual{display:flex;gap:7px;margin-top:9px;}.scan-manual input{flex:1;background:#ffffff;}
-.pass-type-legend{display:flex;gap:12px;margin-bottom:10px;}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);}
-.legend-dot{width:12px;height:12px;border-radius:50%;}
-.hs-banner{background:var(--blue-bg);border:1px solid rgba(37,99,235,0.3);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--navy);line-height:1.6;margin-bottom:10px;}
-.hs-banner b{color:var(--text);}
+
+/* Undo Toast */
+#undo-toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(100px); background: #111827; color: #fff; padding: 10px 16px; border-radius: 99px; font-size: 13px; font-weight: 600; z-index: 9999; display: flex; align-items: center; gap: 12px; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+#undo-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#undo-btn { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+
 </style>
 </head>
 <body>
+
+<div id="offline-banner">⚠️ You are offline. Scans will resume syncing when connection returns.</div>
+
 <div class="app">
   <div class="header">
     <div class="logo">
       <img id="app-header-logo" src="" alt="Logo">
       <span id="app-header-title">Event<span style="color:var(--accent);">Pass</span></span>
     </div>
-    <div id="header-badge" class="badge badge-accent">0 attendees</div>
   </div>
-  <div class="stats-row">
-    <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total</div></div>
-    <div class="stat"><div class="stat-val" id="s-checked" style="color:var(--green)">0</div><div class="stat-lbl">Checked In</div></div>
-    <div class="stat"><div class="stat-val" id="s-single" style="color:var(--red)">0</div><div class="stat-lbl">Single</div></div>
-    <div class="stat"><div class="stat-val" id="s-dual" style="color:var(--blue)">0</div><div class="stat-lbl">Dual</div></div>
+  
+  <div class="gate-stats">
+    <div class="stats-header">
+      <div class="stat-main" id="p-checked">0 <span>/ 0 checked in</span></div>
+      <div class="stat-pct" id="p-pct">0%</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="p-bar"></div></div>
   </div>
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab(this,'import')">Attendees</div>
     <div class="tab" onclick="switchTab(this,'passes')">Passes</div>
@@ -195,7 +222,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
         <button class="btn btn-primary btn-full" onclick="addManual()" style="margin-top:4px">+ Add Attendee</button>
       </div>
       <div class="card">
-        <div class="flex gap8 mb10" style="justify-content:space-between;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div class="card-title" style="margin-bottom:0">Attendee List</div>
           <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear all</button>
         </div>
@@ -237,9 +264,9 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
         </div>
       </div>
       <div class="card">
-        <div class="flex gap8 mb10" style="justify-content:space-between;flex-wrap:wrap;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
           <div class="card-title" style="margin-bottom:0">Generated Passes</div>
-          <div class="flex gap8">
+          <div style="display:flex; gap:8px;">
             <button class="btn btn-ghost btn-sm" onclick="printPasses()">🖨 Print</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadAll()">⬇ All PNG</button>
           </div>
@@ -251,7 +278,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
 
     <div id="tab-scanner" class="panel">
       <div class="scan-result" id="scan-result">
-        <div class="result-icon" id="res-icon"></div>
+        <div class="result-icon" id="res-icon">✓</div>
         <div class="result-name" id="res-name"></div>
         <div class="result-sub" id="res-sub"></div>
         <div class="scan-info-grid" id="res-detail"></div>
@@ -282,16 +309,18 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Manual / Fallback Entry</div>
-        <div class="scan-manual">
-          <input type="text" id="manual-input" placeholder="Type Unique ID or attendee name…" onkeydown="if(event.key==='Enter')manualScan()">
-          <button class="btn btn-primary" onclick="manualScan()">Check</button>
+        <div class="card-title">Manual Search / Fallback</div>
+        <div class="manual-search-container">
+          <div class="scan-manual">
+            <input type="text" id="manual-input" placeholder="Type name or ID…" oninput="liveSearch()" onfocus="liveSearch()">
+            <button class="btn btn-primary" onclick="manualScan()">Check</button>
+          </div>
+          <div id="search-dropdown"></div>
         </div>
       </div>
       <div class="card">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>Recent Scans</span>
-          <span id="sync-badge" style="font-size:9px;color:#fff;background:var(--green);padding:3px 8px;border-radius:99px;font-weight:700;display:none;">↔️ SYNC ON</span>
         </div>
         <div id="recent-scans"><div class="empty" style="padding:12px 0">No scans yet.</div></div>
       </div>
@@ -299,13 +328,13 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
 
     <div id="tab-log" class="panel">
       <div class="card">
-        <div class="flex gap8 mb10" style="justify-content:space-between;flex-wrap:wrap;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
           <div class="card-title" style="margin-bottom:0">Entry Log</div>
           <button class="btn btn-ghost btn-sm" onclick="exportLog()">⬇ CSV</button>
         </div>
         <div class="search-wrap mb10"><span class="search-icon">🔍</span><input type="text" id="log-search" placeholder="Search log…" oninput="renderLog()"></div>
         <select id="log-filter" onchange="renderLog()" style="margin-bottom:10px;background:#ffffff;">
-          <option value="">All events</option><option value="checked_in">Checked in</option><option value="duplicate">Duplicate scan</option><option value="not_found">Not found</option>
+          <option value="">All entries</option><option value="checked_in">Checked in</option><option value="duplicate">Duplicate scan</option><option value="not_found">Not found</option>
         </select>
         <div id="log-list"><div class="empty">No entries yet.</div></div>
       </div>
@@ -314,13 +343,19 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-wei
   </div>
 </div>
 
+<div id="undo-toast">
+  <span id="undo-msg">Checked in Name</span>
+  <button id="undo-btn" onclick="executeUndo()">Undo</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, query, orderBy, writeBatch, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
 
+// ══ FIREBASE INIT ══════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
   authDomain: "scanner-system-32692.firebaseapp.com",
@@ -329,16 +364,23 @@ const firebaseConfig = {
   messagingSenderId: "517388530229",
   appId: "1:517388530229:web:418d4e80fce9bfa931f77c"
 };
-const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+const app = initializeApp(firebaseConfig); 
+const db = getFirestore(app);
 
 window.guests = []; window.entryLog = []; window.recentScans = [];
 let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
 const COOLDOWN=2500; let rebuildTimer=null, saveTimer=null, logoDataUrl='', cameraActive=false;
+let lastScanDoc = null; let undoTimeout = null;
 
+// ── Offline Detection ──
+window.addEventListener('offline', () => document.getElementById('offline-banner').style.display = 'block');
+window.addEventListener('online', () => document.getElementById('offline-banner').style.display = 'none');
+
+// ── Validation Helpers ──
 function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function valMob(m){ return /^\d{10}$/.test(m); }
 
-// ── DYNAMIC HEADER SYNC ──
+// ══ REAL-TIME SYNC ═════════════════════════════════════════════════
 onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
   if (snap.exists()) {
     const data = snap.data();
@@ -346,28 +388,19 @@ onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
     safeSet('evt-name', data.evtName); safeSet('evt-date', data.evtDate); safeSet('evt-time', data.evtTime);
     safeSet('evt-venue', data.evtVenue); safeSet('inst-name', data.instName); safeSet('inst-addr', data.instAddr);
     
-    // Update Dynamic App Header Title
-    if(data.instName) {
-      document.getElementById('app-header-title').textContent = data.instName;
-    } else {
-      document.getElementById('app-header-title').innerHTML = 'Event<span style="color:var(--accent);">Pass</span>';
-    }
+    if(data.instName) document.getElementById('app-header-title').textContent = data.instName;
+    else document.getElementById('app-header-title').innerHTML = 'Event<span style="color:var(--accent);">Pass</span>';
 
     if (data.logoDataUrl !== logoDataUrl) {
        logoDataUrl = data.logoDataUrl || '';
        if (logoDataUrl) {
          document.getElementById('logo-preview').src = logoDataUrl; document.getElementById('logo-preview').style.display = 'block';
          document.getElementById('logo-placeholder').style.display = 'none'; document.getElementById('logo-clear-btn').style.display = 'block';
-         
-         // Update Dynamic App Header Logo
-         document.getElementById('app-header-logo').src = logoDataUrl;
-         document.getElementById('app-header-logo').style.display = 'block';
+         document.getElementById('app-header-logo').src = logoDataUrl; document.getElementById('app-header-logo').style.display = 'block';
        } else {
          document.getElementById('logo-preview').src = ''; document.getElementById('logo-preview').style.display = 'none';
          document.getElementById('logo-placeholder').style.display = 'block'; document.getElementById('logo-clear-btn').style.display = 'none';
-         
-         document.getElementById('app-header-logo').src = '';
-         document.getElementById('app-header-logo').style.display = 'none';
+         document.getElementById('app-header-logo').src = ''; document.getElementById('app-header-logo').style.display = 'none';
        }
     }
     window.buildAllPasses();
@@ -376,15 +409,15 @@ onSnapshot(doc(db, "config", "eventDetails"), (snap) => {
 
 onSnapshot(collection(db, "guests"), (snapshot) => {
   window.guests = []; snapshot.forEach((doc) => { window.guests.push({ id: doc.id, ...doc.data() }); });
-  updateStats(); renderGuests(); document.getElementById('sync-badge').style.display='inline-block';
+  updateStats(); renderGuests();
 });
 
 const q = query(collection(db, "log"), orderBy("time", "desc"));
 onSnapshot(q, (snapshot) => {
   window.entryLog = []; window.recentScans = []; let count = 0;
   snapshot.forEach((doc) => {
-    const data = doc.data(); window.entryLog.push(data);
-    if(count < 12) { window.recentScans.push({ g: { name: data.name, uid: data.uid }, type: data.type, time: data.time, remote: true }); count++; }
+    const data = doc.data(); data.logId = doc.id; window.entryLog.push(data);
+    if(count < 12) { window.recentScans.push({ g: { name: data.name, uid: data.uid }, type: data.type, time: data.time }); count++; }
   });
   window.renderLog(); window.renderRecentScans();
 });
@@ -408,11 +441,11 @@ window.switchTab = function(el,name){
 }
 
 function updateStats(){
-  const t=window.guests.length, c=window.guests.filter(g=>g.checkinCount>0).length;
-  document.getElementById('s-total').textContent=t; document.getElementById('s-checked').textContent=c;
-  document.getElementById('s-single').textContent=window.guests.filter(g=>!window.isDual(g)).length;
-  document.getElementById('s-dual').textContent=window.guests.filter(g=>window.isDual(g)).length;
-  document.getElementById('header-badge').textContent=t+' attendee'+(t!==1?'s':'');
+  const t = window.guests.length, c = window.guests.filter(g=>g.checkinCount>0).length;
+  const pct = t > 0 ? Math.round((c/t)*100) : 0;
+  document.getElementById('p-checked').innerHTML = `${c} <span>/ ${t} checked in</span>`;
+  document.getElementById('p-pct').textContent = `${pct}%`;
+  document.getElementById('p-bar').style.width = `${pct}%`;
 }
 
 window.handleFile = async function(e){
@@ -452,7 +485,6 @@ window.addManual = async function(){
   const school=document.getElementById('add-school').value; const year=document.getElementById('add-year').value.trim();
   const email=document.getElementById('add-email').value.trim(); const mobile=document.getElementById('add-mobile').value.trim();
   const degree=document.getElementById('add-degree').value; const passType=document.getElementById('add-passtype').value;
-  
   if(!uid||!name||!school||!year||!email||!mobile){ window.showToast('All fields are mandatory!'); return; }
   if(!valEmail(email)) { window.showToast('Invalid Email ID!'); return; }
   if(!valMob(mobile)) { window.showToast('Invalid 10-digit Mobile!'); return; }
@@ -461,7 +493,18 @@ window.addManual = async function(){
   ['add-uid','add-name','add-year','add-email','add-mobile'].forEach(id=>document.getElementById(id).value=''); document.getElementById('add-school').value=''; window.showToast('Attendee added ✓');
 }
 
-window.clearAll = async function(){ if(window.guests.length && !confirm('Are you sure? Clear Firebase console manually to prevent data loss.'))return; }
+// ── BATCH DELETE FIX ──
+window.clearAll = async function(){ 
+  if(window.guests.length && !confirm('⚠️ Are you sure? This will PERMANENTLY DELETE all attendees and logs.')) return; 
+  window.showToast("Clearing database...");
+  try {
+    const batch = writeBatch(db);
+    window.guests.forEach(g => batch.delete(doc(db, "guests", g.id)));
+    window.entryLog.forEach(l => batch.delete(doc(db, "log", l.logId)));
+    await batch.commit();
+    window.showToast("Database cleared ✓");
+  } catch (e) { alert("Failed to clear data."); }
+}
 
 window.renderGuests = function(){
   const q=document.getElementById('guest-search').value.toLowerCase();
@@ -480,6 +523,7 @@ window.renderGuests = function(){
   }).join('');
 }
 
+// ── Pass UI (Premium) ────────────────────────
 const PW=520, PH=850;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
@@ -539,13 +583,28 @@ window.dlOne = function(cv,g){ const a=document.createElement('a');a.href=cv.toD
 window.downloadAll = function(){ const cards=document.querySelectorAll('.pass-card'); if(!cards.length){window.showToast('Generate passes first');return;} cards.forEach((card,i)=>{setTimeout(()=>{const cv=card.querySelector('canvas');if(cv&&window.guests[i])window.dlOne(cv,window.guests[i]);},i*300);}); window.showToast('Downloading '+cards.length+' passes…'); }
 window.printPasses = function(){ const cards=document.querySelectorAll('.pass-card'); if(!cards.length){window.showToast('Generate passes first');return;} const win=window.open('','_blank');if(!win){alert('Allow popups to print.');return;} let imgs=''; cards.forEach((card,i)=>{ const cv=card.querySelector('canvas');if(!cv)return; const dual=window.guests[i]&&window.isDual(window.guests[i]); imgs+=`<div class="pass" style="border-top:5px solid ${dual?'#2563eb':'#dc2626'};box-shadow:0 2px 5px rgba(0,0,0,0.1);"><img src="${cv.toDataURL('image/png')}"><div class="nm">${window.esc(window.guests[i]?.name||'')} <span style="color:${dual?'#2563eb':'#dc2626'};font-size:10px;">${dual?'[DUAL]':'[SINGLE]'}</span></div></div>`; }); win.document.write(`<!DOCTYPE html><html><head><title>Event Passes</title> <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#f3f4f6;font-family:sans-serif;padding:10px;} .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;max-width:900px;margin:0 auto;} .pass{background:#fff;border-radius:10px;padding:7px;page-break-inside:avoid;} .pass img{width:100%;height:auto;border-radius:6px;display:block;} .nm{font-size:10px;text-align:center;margin-top:4px;font-weight:700;color:#111827;} @media print{body{padding:2px;background:#fff;}.grid{gap:6px;box-shadow:none;}} </style></head><body><div class="grid">${imgs}</div></body></html>`); win.document.close();win.onload=()=>{win.focus();win.print();}; }
 
+// ══ Scanner & Validation ═════════════════
 window.requestCameraPermission = async function(){ const btn=document.getElementById('cam-start-btn');const note=document.getElementById('cam-note'); btn.textContent='📷 Requesting access…';btn.disabled=true;note.style.display='none'; if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ btn.textContent='📷 Start Camera Scanner';btn.disabled=false;note.style.display='block'; note.innerHTML='<b>Camera not available.</b> Your browser blocked camera access because this page is not served over HTTPS.<br><br>'+ '<b>Workaround options:</b><br>① <b>iOS Safari:</b> Tap Share → Add to Home Screen, then open from there<br>'+ '② <b>Android Chrome:</b> tap ⋮ menu → Add to Home Screen<br>③ Host the file at any HTTPS URL (GitHub Pages, etc.)<br>④ Use the <b>Manual Entry</b> field below instead.'; document.getElementById('hs-hint').style.display='block';window.showToast('Camera not available — use Manual Entry');return; } try{ const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}}}); videoStream=stream; document.getElementById('cam-permission-card').style.display='none';document.getElementById('scanner-wrap').style.display='block'; const video=document.getElementById('qr-video');video.srcObject=stream; try{await video.play();}catch(e){} try{ const devs=await navigator.mediaDevices.enumerateDevices();const cams=devs.filter(d=>d.kind==='videoinput'); if(cams.length>1){ const sel=document.getElementById('camera-select');sel.innerHTML=''; cams.forEach((cam,i)=>{const o=document.createElement('option');o.value=cam.deviceId;o.text=cam.label||'Camera '+(i+1);sel.appendChild(o);}); const back=cams.find(c=>/back|rear|environment/i.test(c.label));if(back)sel.value=back.deviceId;sel.style.display='block'; } }catch(e){} const track=stream.getVideoTracks()[0];if(track?.getCapabilities?.()?.torch) document.getElementById('torch-btn').style.display='inline-flex'; document.getElementById('scanner-status').textContent='Point camera at QR code';cameraActive=true;startScanning(video); }catch(err){ btn.textContent='📷 Start Camera Scanner';btn.disabled=false;note.style.display='block'; if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){ note.innerHTML='<b>Permission denied.</b><br>• On <b>iOS</b>: Settings → Safari → Camera → Allow<br>• On <b>Android</b>: tap 🔒 in address bar → Camera → Allow<br>• Then reload and try again, or use <b>Manual Entry</b> below.'; window.showToast('Camera permission denied'); } else { note.innerHTML='<b>Camera error:</b> '+window.esc(err.message||err.name)+'<br>Use Manual Entry below.';window.showToast('Camera error'); } } }
 window.switchCamera = async function(){ const sel=document.getElementById('camera-select');if(!sel.value||!cameraActive)return; window.stopScanner(false); try{ const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:sel.value},width:{ideal:1280},height:{ideal:1280}}}); videoStream=stream;const video=document.getElementById('qr-video');video.srcObject=stream; try{await video.play();}catch(e){}cameraActive=true;startScanning(video); }catch(e){window.showToast('Could not switch camera');} }
 window.stopScanner = function(resetUI=true){ if(scanInterval){clearInterval(scanInterval);scanInterval=null;} if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null;} cameraActive=false; if(resetUI){ document.getElementById('cam-permission-card').style.display='block';document.getElementById('scanner-wrap').style.display='none'; const btn=document.getElementById('cam-start-btn');btn.textContent='📷 Start Camera Scanner';btn.disabled=false; } }
 function startScanning(video){ const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:true}); scanInterval=setInterval(()=>{ if(video.readyState!==video.HAVE_ENOUGH_DATA)return; canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.drawImage(video,0,0,canvas.width,canvas.height); const d=ctx.getImageData(0,0,canvas.width,canvas.height);const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'}); if(code?.data){const now=Date.now();if(now-lastScanTime<COOLDOWN)return;lastScanTime=now;window.processScan(code.data);} },100); }
 window.toggleTorch = async function(){ if(!videoStream)return;torchOn=!torchOn; try{await videoStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torchOn}]});}catch(e){} document.getElementById('torch-btn').textContent=torchOn?'🔆':'🔦'; }
-window.manualScan = function(){ const v=document.getElementById('manual-input').value.trim();if(!v)return; window.processScan(v);document.getElementById('manual-input').value=''; }
 
+// ── LIVE SEARCH ──
+window.liveSearch = function(){
+  const v=document.getElementById('manual-input').value.trim().toLowerCase();
+  const dd=document.getElementById('search-dropdown');
+  if(!v) { dd.style.display='none'; return; }
+  const matches = window.guests.filter(g=>g.name.toLowerCase().includes(v)||g.uid.toLowerCase().includes(v)).slice(0,5);
+  if(!matches.length) { dd.style.display='none'; return; }
+  dd.innerHTML = matches.map(g=>`<div class="search-dropdown-item" onclick="document.getElementById('manual-input').value='${g.uid}';document.getElementById('search-dropdown').style.display='none';window.manualScan();"><div><div style="font-weight:700;font-size:13px;color:var(--text);">${window.esc(g.name)}</div><div style="font-size:10px;color:var(--text3);">${window.esc(g.uid)}</div></div><div class="badge ${window.isDual(g)?'badge-blue':'badge-red'}">${window.isDual(g)?'Dual':'Single'}</div></div>`).join('');
+  dd.style.display='block';
+}
+document.addEventListener('click', (e)=>{ if(!e.target.closest('.manual-search-container')) document.getElementById('search-dropdown').style.display='none'; });
+
+window.manualScan = function(){ const v=document.getElementById('manual-input').value.trim();if(!v)return; window.processScan(v);document.getElementById('manual-input').value=''; document.getElementById('search-dropdown').style.display='none'; }
+
+// ── CORE SCANNER LOGIC ──
 window.processScan = async function(raw){
   const uid = raw.trim();
   const resBox = document.getElementById('scan-result');
@@ -565,7 +624,7 @@ window.processScan = async function(raw){
   const maxEntries = dual ? 2 : 1;
 
   if (currentCount >= maxEntries) {
-    resBox.classList.add('dup'); document.getElementById('res-icon').textContent = '⚠';
+    resBox.classList.add('dup'); document.getElementById('res-icon').innerHTML = '⚠';
     document.getElementById('res-name').textContent = guest.name;
     document.getElementById('res-sub').textContent = `Already checked in (${currentCount}/${maxEntries})`;
     showDetailGrid(guest); vibrate([200,80,200]); soundDuplicate(); return;
@@ -574,8 +633,13 @@ window.processScan = async function(raw){
   if (dual && currentCount === 0) {
     if(document.getElementById('comp-modal')) return; 
     const opts = `<option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option>`;
+
     const m = document.createElement('div'); m.id = 'comp-modal';
     m.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    
+    // Clicking backdrop closes modal
+    m.addEventListener('click', (e) => { if(e.target === m) document.getElementById('cm-cancel').click(); });
+
     m.innerHTML = `
       <div style="background:#ffffff;padding:24px;border-radius:12px;width:100%;max-width:380px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
         <h3 style="margin-bottom:6px;font-size:18px;font-weight:800;color:#1e3a8a;">Dual Pass Registration</h3>
@@ -592,10 +656,8 @@ window.processScan = async function(raw){
         </select>
         <div id="cm-alumni-fields">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div><label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">School *</label>
-            <select id="cm-school" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;">${opts}</select></div>
-            <div><label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Passing Year *</label>
-            <input type="number" id="cm-year" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;"></div>
+            <div><label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">School *</label><select id="cm-school" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;">${opts}</select></div>
+            <div><label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Passing Year *</label><input type="number" id="cm-year" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;"></div>
           </div>
           <label style="font-size:11px;color:#4b5563;display:block;margin-bottom:4px;font-weight:600;">Degree Type *</label>
           <select id="cm-degree" style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;color:#111827;outline:none;"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
@@ -611,38 +673,123 @@ window.processScan = async function(raw){
     document.getElementById('cm-submit').onclick = async () => {
       const cName = document.getElementById('cm-name').value.trim(); const cEmail = document.getElementById('cm-email').value.trim(); const cMobile = document.getElementById('cm-mobile').value.trim();
       const isAlumni = document.getElementById('cm-alumni').value;
-      const cSchool = isAlumni === 'Yes' ? document.getElementById('cm-school').value : 'N/A';
-      const cYear = isAlumni === 'Yes' ? document.getElementById('cm-year').value.trim() : 'N/A';
-      const cDegree = isAlumni === 'Yes' ? document.getElementById('cm-degree').value : 'N/A';
+      const cSchool = isAlumni === 'Yes' ? document.getElementById('cm-school').value : 'N/A'; const cYear = isAlumni === 'Yes' ? document.getElementById('cm-year').value.trim() : 'N/A'; const cDegree = isAlumni === 'Yes' ? document.getElementById('cm-degree').value : 'N/A';
 
       if(!cName || !cEmail || !cMobile) { alert("Name, Email, and Mobile are mandatory!"); return; }
       if(isAlumni === 'Yes' && (!cSchool || !cYear)) { alert("School and Year are mandatory for Alumni!"); return; }
       if(!valEmail(cEmail)) { alert("Invalid Email format!"); return; }
       if(!valMob(cMobile)) { alert("Mobile must be exactly 10 digits!"); return; }
       document.body.removeChild(m);
-      resBox.classList.add('ok'); document.getElementById('res-icon').textContent = '✓';
+      
+      resBox.classList.add('ok'); document.getElementById('res-icon').innerHTML = '✓';
       document.getElementById('res-name').textContent = guest.name + " & " + cName; document.getElementById('res-sub').textContent = 'Dual Entry Authorized';
       showDetailGrid({ ...guest, checkinCount: 2 }); vibrate([60]); soundSuccess();
+      
       await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 2, lastCheckin: new Date().toISOString() });
-      window.logToFirebase(guest, 'checked_in');
-      try { await addDoc(collection(db, "log"), { uid: guest.uid + "-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() }); } catch(e) { console.error(e); }
+      const log1 = await window.logToFirebase(guest, 'checked_in');
+      let log2 = null;
+      try { const d = await addDoc(collection(db, "log"), { uid: guest.uid + "-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, email: cEmail, mobile: cMobile, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() }); log2 = d.id; } catch(e) { console.error(e); }
+      
+      triggerUndo(guest, 2, [log1, log2]);
     };
     return;
   }
-  resBox.classList.add('ok'); document.getElementById('res-icon').textContent = '✓'; document.getElementById('res-name').textContent = guest.name; document.getElementById('res-sub').textContent = 'Entry allowed'; showDetailGrid({ ...guest, checkinCount: 1 }); vibrate([60]); soundSuccess();
-  await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 1, lastCheckin: new Date().toISOString() }); window.logToFirebase(guest, 'checked_in');
+  
+  resBox.classList.add('ok'); document.getElementById('res-icon').innerHTML = '✓'; document.getElementById('res-name').textContent = guest.name; document.getElementById('res-sub').textContent = 'Entry allowed'; showDetailGrid({ ...guest, checkinCount: 1 }); vibrate([60]); soundSuccess();
+  await updateDoc(doc(db, "guests", guest.uid), { checkinCount: 1, lastCheckin: new Date().toISOString() }); 
+  const logId = await window.logToFirebase(guest, 'checked_in');
+  
+  triggerUndo(guest, 1, [logId]);
 }
-window.logToFirebase = async function(g, type){ try { await addDoc(collection(db, "log"), { uid: g.uid || 'Unknown', name: g.name || 'Unknown', degree: g.degree || '', passType: g.passType || '', type, time: new Date().toISOString() }); } catch(e) { console.error(e); } }
+
+window.logToFirebase = async function(g, type){ try { const d = await addDoc(collection(db, "log"), { uid: g.uid || 'Unknown', name: g.name || 'Unknown', degree: g.degree || '', passType: g.passType || '', type, time: new Date().toISOString() }); return d.id; } catch(e) { console.error(e); return null; } }
 function showDetailGrid(g){ const dual=window.isDual(g); document.getElementById('res-detail').innerHTML=`<div class="scan-info-item"><div class="scan-info-lbl">Unique ID</div><div class="scan-info-val" style="font-family:monospace;font-size:11px">${window.esc(g.uid)}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Degree</div><div class="scan-info-val">${window.esc(g.degree||'—')}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Pass Type</div><div class="scan-info-val" style="color:${dual?'#2563eb':'#dc2626'}">${window.esc(g.passType)}</div></div><div class="scan-info-item"><div class="scan-info-lbl">Entries Used</div><div class="scan-info-val">${g.checkinCount||0} / ${dual?2:1}</div></div>`; }
 function vibrate(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
-window.renderRecentScans = function(){ const el=document.getElementById('recent-scans'); if(!window.recentScans.length){el.innerHTML='<div class="empty" style="padding:12px 0">No scans yet.</div>';return;} const cls={checked_in:'badge-green',duplicate:'badge-amber',not_found:'badge-red'}; const lbl={checked_in:'✓ OK',duplicate:'⚠ Dup',not_found:'✕ Miss'}; el.innerHTML=window.recentScans.map(s=>`<div class="log-item"><span class="log-time">${window.fmtTime(s.time)}</span><span class="log-name">${window.esc(s.g.name)}<span style="color:var(--text3);font-size:9px;"> ${window.esc(s.g.uid||'')}</span>${s.remote?'<span style="color:var(--blue);font-size:9px;margin-left:3px;font-weight:700;">↔️ SYNC</span>':''}</span><span class="badge ${cls[s.type]}" style="font-size:10px;">${lbl[s.type]}</span></div>`).join(''); }
-window.renderLog = function(){ const q=(document.getElementById('log-search').value||'').toLowerCase(); const f=document.getElementById('log-filter').value; const el=document.getElementById('log-list'); if(window.entryLog.length === 0){ el.innerHTML='<div class="empty">No entries yet.</div>'; return; } const filtered = window.entryLog.filter(l => (!q || (l.name || '').toLowerCase().includes(q) || (l.uid || '').toLowerCase().includes(q)) && (!f || l.type === f)); if(!filtered.length){el.innerHTML='<div class="empty">No matches found for your search.</div>';return;} const labels={checked_in:'In',duplicate:'Dup',not_found:'Miss'}; const cls={checked_in:'badge-green',duplicate:'badge-amber',not_found:'badge-red'}; el.innerHTML=filtered.map(l=>`<div class="log-item"><span class="log-time">${window.fmtTime(l.time)}</span><span class="log-name">${window.esc(l.name)} <span style="color:var(--text3);font-size:9px;">${window.esc(l.uid)} ${window.esc(l.degree)}</span></span><span class="badge ${window.isDual({passType:l.passType})?'badge-blue':'badge-red'}" style="font-size:9px;margin-right:2px;">${window.isDual({passType:l.passType})?'D':'S'}</span><span class="badge ${cls[l.type]}">${labels[l.type]}</span></div>`).join(''); }
+
+// ── UNDO LOGIC ──
+function triggerUndo(guest, incrementCount, logIds) {
+  clearTimeout(undoTimeout);
+  lastScanDoc = { guestId: guest.uid, countAdded: incrementCount, logIds: logIds };
+  document.getElementById('undo-msg').textContent = `Checked in ${window.esc(guest.name)}`;
+  document.getElementById('undo-toast').classList.add('show');
+  undoTimeout = setTimeout(() => { document.getElementById('undo-toast').classList.remove('show'); lastScanDoc = null; }, 5000);
+}
+window.executeUndo = async function() {
+  if(!lastScanDoc) return;
+  document.getElementById('undo-toast').classList.remove('show');
+  try {
+    const guestData = window.guests.find(g => g.uid === lastScanDoc.guestId);
+    if(guestData) {
+      const newCount = Math.max(0, (guestData.checkinCount || 0) - lastScanDoc.countAdded);
+      await updateDoc(doc(db, "guests", guestData.uid), { checkinCount: newCount });
+    }
+    for (const logId of lastScanDoc.logIds) { if(logId) await deleteDoc(doc(db, "log", logId)); }
+    window.showToast('Check-in undone successfully.');
+    document.getElementById('scan-result').className = 'scan-result';
+  } catch(e) { window.showToast('Failed to undo check-in.'); }
+  lastScanDoc = null;
+}
+
+window.renderRecentScans = function(){ const el=document.getElementById('recent-scans'); if(!window.recentScans.length){el.innerHTML='<div class="empty" style="padding:12px 0">No scans yet.</div>';return;} const cls={checked_in:'badge-green',duplicate:'badge-amber',not_found:'badge-red'}; const lbl={checked_in:'✓ OK',duplicate:'⚠ Dup',not_found:'✕ Miss'}; el.innerHTML=window.recentScans.map(s=>`<div class="log-item"><span class="log-time">${window.fmtTime(s.time)}</span><span class="log-name">${window.esc(s.g.name)}<span style="color:var(--text3);font-size:9px;"> ${window.esc(s.g.uid||'')}</span></div><span class="badge ${cls[s.type]}" style="font-size:10px;">${lbl[s.type]}</span></div>`).join(''); }
+window.renderLog = function(){ const q=(document.getElementById('log-search').value||'').toLowerCase(); const f=document.getElementById('log-filter').value; const el=document.getElementById('log-list'); if(window.entryLog.length === 0){ el.innerHTML='<div class="empty">No entries yet.</div>'; return; } const filtered = window.entryLog.filter(l => (!q || (l.name || '').toLowerCase().includes(q) || (l.uid || '').toLowerCase().includes(q)) && (!f || l.type === f)); if(!filtered.length){el.innerHTML='<div class="empty">No matches found for your search.</div>';return;} const labels={checked_in:'In',duplicate:'Dup',not_found:'Miss'}; const cls={checked_in:'avatar-blue',duplicate:'avatar-gray',not_found:'avatar-red'}; el.innerHTML=filtered.map(l=>`<div class="log-item"><div class="guest-avatar ${cls[l.type]}">${window.esc(window.initials(l.name))}</div><div class="guest-info"><div class="guest-name">${window.esc(l.name)}</div><div class="guest-meta">${window.fmtTime(l.time)} · ${window.esc(l.uid)}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;"><span class="badge ${window.isDual({passType:l.passType})?'badge-blue':'badge-red'}">${window.isDual({passType:l.passType})?'D':'S'}</span><span class="badge ${l.type==='checked_in'?'badge-green':(l.type==='not_found'?'badge-red':'badge-amber')}">${labels[l.type]}</span></div></div>`).join(''); }
 window.exportLog = function(){ if(!window.entryLog.length){window.showToast('No entries yet');return;} const rows=[['Time','Name','Unique ID','School','Passing Year','Degree','Email','Mobile','Pass Type','Event'], ...window.entryLog.map(l=>[new Date(l.time).toLocaleString(),l.name,l.uid,l.school||'',l.passYear||'',l.degree,l.email||'',l.mobile||'',l.passType,l.type])]; const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n'); const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='entry_log_'+new Date().toISOString().substr(0,10)+'.csv';a.click(); }
 window.showToast = function(msg){ let t=document.getElementById('toast'); if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#111827;border:1px solid rgba(255,255,255,0.1);color:#ffffff;padding:10px 18px;border-radius:99px;font-size:12px;font-weight:700;z-index:999;opacity:0;transition:all 0.2s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.15);';document.body.appendChild(t);} t.textContent=msg;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)'; clearTimeout(window._tt); window._tt=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2500); }
 
 const dz=document.getElementById('drop-zone'); dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}); dz.addEventListener('dragleave',()=>dz.classList.remove('drag')); dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)window.handleFile({target:{files:[f]}});});
-window.handleLogo = function(e){ const file=e.target.files[0];if(!file)return; if(file.size > 800000) { window.showToast("Image too large! Please use a logo under 800KB."); return; } const r=new FileReader(); r.onload=ev=>{ logoDataUrl=ev.target.result; document.getElementById('logo-preview').src=logoDataUrl; document.getElementById('logo-preview').style.display='block'; document.getElementById('logo-placeholder').style.display='none'; document.getElementById('logo-clear-btn').style.display='block'; window.saveSettingsToFirebase(); }; r.readAsDataURL(file);e.target.value=''; };
-window.clearLogo = function(){ logoDataUrl=''; document.getElementById('logo-preview').src=''; document.getElementById('logo-preview').style.display='none'; document.getElementById('logo-placeholder').style.display='block'; document.getElementById('logo-clear-btn').style.display='none'; window.saveSettingsToFirebase(); };
+
+// ── AUTO-COMPRESS LOGO UPLOAD (No Firebase Storage Needed) ──
+window.handleLogo = function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')) { window.showToast("Please upload an image file."); return; }
+
+  window.showToast("Optimizing logo...");
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      const MAX_SIZE = 400;
+      if (width > height && width > MAX_SIZE) {
+        height *= MAX_SIZE / width;
+        width = MAX_SIZE;
+      } else if (height > MAX_SIZE) {
+        width *= MAX_SIZE / height;
+        height = MAX_SIZE;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      logoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      document.getElementById('logo-preview').src = logoDataUrl;
+      document.getElementById('logo-preview').style.display = 'block';
+      document.getElementById('logo-placeholder').style.display = 'none';
+      document.getElementById('logo-clear-btn').style.display = 'block';
+      
+      document.getElementById('app-header-logo').src = logoDataUrl;
+      document.getElementById('app-header-logo').style.display = 'block';
+      
+      window.saveSettingsToFirebase();
+      window.showToast("Logo saved successfully ✓");
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+};
+
+window.clearLogo = function(){ logoDataUrl=''; document.getElementById('logo-preview').src=''; document.getElementById('logo-preview').style.display='none'; document.getElementById('logo-placeholder').style.display='block'; document.getElementById('logo-clear-btn').style.display='none'; document.getElementById('app-header-logo').src = ''; document.getElementById('app-header-logo').style.display = 'none'; window.saveSettingsToFirebase(); };
+
 document.addEventListener('touchstart', function unlockAudio(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('touchstart', unlockAudio);}, {once:true}); document.addEventListener('click', function unlockAudioClick(){try{ getAudioCtx(); }catch(e){} document.removeEventListener('click', unlockAudioClick);}, {once:true});
 </script>
 </body>
