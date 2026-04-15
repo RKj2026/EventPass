@@ -61,13 +61,20 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
     <label>Guest Email *</label><input type="email" id="comp-email" placeholder="Valid Email">
     <label>Guest Mobile *</label><input type="tel" id="comp-mobile" placeholder="10-digit number">
     
-    <div class="grid-2">
-      <div><label>Guest School *</label><select id="comp-school"><option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option></select></div>
-      <div><label>Passing Year *</label><input type="number" id="comp-year" placeholder="e.g. 2025"></div>
+    <label>Is Guest an Alumni? *</label>
+    <select id="comp-alumni" onchange="document.getElementById('comp-alumni-wrap').style.display = this.value === 'Yes' ? 'block' : 'none';">
+      <option value="Yes">Yes, Alumni</option>
+      <option value="No">No, Non-Alumni</option>
+    </select>
+
+    <div id="comp-alumni-wrap">
+      <div class="grid-2">
+        <div><label>Guest School *</label><select id="comp-school"><option value="">Select...</option><option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option><option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option><option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option><option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option><option value="SOHT">SOHT</option><option value="SOW">SOW</option></select></div>
+        <div><label>Passing Year *</label><input type="number" id="comp-year" placeholder="e.g. 2025"></div>
+      </div>
+      <label>Guest Degree Type *</label>
+      <select id="comp-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
     </div>
-    
-    <label>Guest Degree Type *</label>
-    <select id="comp-degree"><option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option></select>
   </div>
 
   <button class="btn" id="action-btn" onclick="handleAction()">Check In</button>
@@ -105,7 +112,7 @@ function valMob(m){ return /^\d{10}$/.test(m); }
 window.toggleSpotCompanion = function() {
   const pt = document.getElementById('reg-passtype').value;
   document.getElementById('companion-fields').style.display = (pt === 'Dual Entry') ? 'block' : 'none';
-  document.getElementById('comp-alert').style.display = 'none'; // Hide lookup alert in spot reg
+  document.getElementById('comp-alert').style.display = 'none'; 
 }
 
 window.handleAction = async function() {
@@ -134,11 +141,14 @@ window.handleAction = async function() {
        cName = document.getElementById('comp-name').value.trim();
        cEmail = document.getElementById('comp-email').value.trim();
        cMobile = document.getElementById('comp-mobile').value.trim();
-       cSchool = document.getElementById('comp-school').value;
-       cYear = document.getElementById('comp-year').value.trim();
-       cDegree = document.getElementById('comp-degree').value;
+       const isAlum = document.getElementById('comp-alumni').value;
        
-       if (!cName || !cEmail || !cMobile || !cSchool || !cYear) { alert("All Guest fields are mandatory for Dual Entry!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+       cSchool = isAlum === 'Yes' ? document.getElementById('comp-school').value : 'N/A';
+       cYear = isAlum === 'Yes' ? document.getElementById('comp-year').value.trim() : 'N/A';
+       cDegree = isAlum === 'Yes' ? document.getElementById('comp-degree').value : 'N/A';
+       
+       if (!cName || !cEmail || !cMobile) { alert("Guest Name, Email, and Mobile are mandatory!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+       if (isAlum === 'Yes' && (!cSchool || !cYear)) { alert("School and Year are mandatory for Guest Alumni!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
        if (!valEmail(cEmail)) { alert("Guest Email is invalid!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
        if (!valMob(cMobile)) { alert("Guest Mobile must be 10 digits!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
     }
@@ -161,11 +171,14 @@ window.handleAction = async function() {
     const cName = document.getElementById('comp-name').value.trim();
     const cEmail = document.getElementById('comp-email').value.trim();
     const cMobile = document.getElementById('comp-mobile').value.trim();
-    const cSchool = document.getElementById('comp-school').value;
-    const cYear = document.getElementById('comp-year').value.trim();
-    const cDegree = document.getElementById('comp-degree').value;
+    const isAlum = document.getElementById('comp-alumni').value;
+    
+    const cSchool = isAlum === 'Yes' ? document.getElementById('comp-school').value : 'N/A';
+    const cYear = isAlum === 'Yes' ? document.getElementById('comp-year').value.trim() : 'N/A';
+    const cDegree = isAlum === 'Yes' ? document.getElementById('comp-degree').value : 'N/A';
 
-    if (!cName || !cEmail || !cMobile || !cSchool || !cYear) { alert("All Guest fields are mandatory!"); btn.textContent = "Check In Both"; btn.disabled = false; return; }
+    if (!cName || !cEmail || !cMobile) { alert("Guest Name, Email, and Mobile are mandatory!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
+    if (isAlum === 'Yes' && (!cSchool || !cYear)) { alert("School and Year are mandatory for Guest Alumni!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
     if (!valEmail(cEmail)) { alert("Guest Email is invalid!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
     if (!valMob(cMobile)) { alert("Guest Mobile must be 10 digits!"); btn.textContent="Check In Both"; btn.disabled=false; return; }
     
@@ -197,7 +210,6 @@ window.handleAction = async function() {
            btn.textContent = "Check In"; btn.disabled = false; foundGuestTemp = null; return;
         }
 
-        // IMMEDIATELY prompt for companion details on first lookup if Dual
         if (dual && count === 0) {
              document.getElementById('companion-fields').style.display = 'block';
              document.getElementById('comp-alert').style.display = 'block';
