@@ -5,22 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Self Check-In | EventPass</title>
 <style>
-:root{ --bg:#0f1117; --bg2:#1a1d27; --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.16); --text:#f0f2f8; --text2:#8b90a7; --accent:#4f8ef7; --green:#22c97a; --radius:12px; --radius-sm:8px;}
+:root{ 
+  --bg: #f3f4f6; 
+  --bg2: #ffffff; 
+  --border: #e5e7eb; 
+  --border2: #d1d5db; 
+  --text: #111827; 
+  --text2: #4b5563; 
+  --accent: #dc2626; /* Deep Red */
+  --navy: #1e3a8a;   /* Navy Blue */
+  --green: #059669; 
+  --radius: 12px; 
+  --radius-sm: 8px;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
-.container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:440px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.4);}
-h1{font-size:22px;font-weight:800;margin-bottom:8px;color:var(--text);}
+.container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;width:100%;max-width:440px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.08);}
+h1{font-size:24px;font-weight:800;margin-bottom:8px;color:var(--navy);}
 p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.5;}
-input,select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;padding:12px;outline:none;margin-bottom:16px;transition:0.2s;}
-input:focus,select:focus{border-color:var(--accent);}
-.btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;margin-top:10px;}
+input,select{width:100%;background:#f9fafb;border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;padding:12px;outline:none;margin-bottom:16px;transition:0.2s;}
+input:focus,select:focus{border-color:var(--navy);background:#ffffff;}
+.btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px;}
 .btn:active{transform:scale(0.98);}
-.success-box{display:none;background:rgba(34,201,122,0.12);border:1px solid rgba(34,201,122,0.3);padding:30px;border-radius:var(--radius);}
-.success-icon{font-size:48px;margin-bottom:10px;}
+.success-box{display:none;background:#d1fae5;border:1px solid rgba(5,150,105,0.3);padding:30px;border-radius:var(--radius);}
+.success-icon{font-size:54px;margin-bottom:10px;}
 #reg-fields, #companion-fields{display:none;text-align:left;}
-label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:600;}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:700;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.section-title{font-size:14px;font-weight:bold;color:var(--accent);margin:20px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.section-title{font-size:14px;font-weight:800;color:var(--navy);margin:20px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px;text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -32,7 +44,7 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
   <input type="text" id="lookup-input" placeholder="e.g. email@example.com or ID">
   
   <div id="reg-fields">
-    <div style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);padding:12px;border-radius:8px;font-size:12px;color:#f5a623;margin-bottom:20px;text-align:center;">
+    <div style="background:#fef3c7;border:1px solid rgba(217,119,6,0.3);padding:12px;border-radius:8px;font-size:12px;color:#d97706;margin-bottom:20px;text-align:center;font-weight:600;">
       We couldn't find your ID. Please fill out this form to register on the spot.
     </div>
     
@@ -53,7 +65,7 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 
   <div id="companion-fields">
     <div class="section-title">2nd Guest Details (Dual Pass)</div>
-    <div id="comp-alert" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);padding:10px;border-radius:8px;font-size:12px;color:#60a5fa;margin-bottom:16px;text-align:center;">
+    <div id="comp-alert" style="display:none;background:#dbeafe;border:1px solid rgba(37,99,235,0.3);padding:10px;border-radius:8px;font-size:12px;color:#1e3a8a;margin-bottom:16px;text-align:center;font-weight:600;">
       Dual Pass detected! Please provide your guest's full details.
     </div>
 
@@ -83,7 +95,7 @@ label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 <div class="container success-box" id="success-card">
   <div class="success-icon">✅</div>
   <h1 style="color:var(--green)">You're In!</h1>
-  <p style="margin-bottom:0">Your attendance has been recorded.<br>Enjoy the event!</p>
+  <p style="margin-bottom:0;color:#065f46;font-weight:600;">Your attendance has been recorded.<br>Enjoy the event!</p>
 </div>
 
 <script type="module">
@@ -105,7 +117,6 @@ let isRegistrationMode = false;
 let foundGuestTemp = null;
 let foundDocIdTemp = null;
 
-// Validation Regex
 function valEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function valMob(m){ return /^\d{10}$/.test(m); }
 
@@ -147,7 +158,7 @@ window.handleAction = async function() {
        cYear = isAlum === 'Yes' ? document.getElementById('comp-year').value.trim() : 'N/A';
        cDegree = isAlum === 'Yes' ? document.getElementById('comp-degree').value : 'N/A';
        
-       if (!cName || !cEmail || !cMobile) { alert("Guest Name, Email, and Mobile are mandatory!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
+       if (!cName || !cEmail || !cMobile) { alert("Guest Name, Email, and Mobile are mandatory for Dual Entry!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
        if (isAlum === 'Yes' && (!cSchool || !cYear)) { alert("School and Year are mandatory for Guest Alumni!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
        if (!valEmail(cEmail)) { alert("Guest Email is invalid!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
        if (!valMob(cMobile)) { alert("Guest Mobile must be 10 digits!"); btn.textContent="Register & Check In"; btn.disabled=false; return; }
@@ -219,13 +230,11 @@ window.handleAction = async function() {
              return;
         }
 
-        // Standard Single Check in
         await updateDoc(doc(db, "guests", foundDocIdTemp), { checkinCount: 1, lastCheckin: new Date().toISOString() });
         await addDoc(collection(db, "log"), { uid: foundGuestTemp.uid, name: foundGuestTemp.name, degree: foundGuestTemp.degree, school: foundGuestTemp.school||'', passYear: foundGuestTemp.passYear||'', email: foundGuestTemp.email||'', mobile: foundGuestTemp.mobile||'', passType: foundGuestTemp.passType, type: "checked_in", time: new Date().toISOString() });
         showSuccess();
         
       } else {
-        // Not Found -> Switch to Reg Mode
         isRegistrationMode = true;
         document.getElementById('reg-fields').style.display = 'block';
         document.getElementById('instruction-text').style.display = 'none';
