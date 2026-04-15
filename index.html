@@ -459,7 +459,7 @@ window.renderGuests = function(){
 }
 
 // ── Pass UI (Premium Redesign) ────────────────────────
-const PW=520, PH=820;
+const PW=520, PH=850;
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function wrap(c,txt,maxW){const words=String(txt||'').split(' '),lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(c.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);return lines;}
 
@@ -498,7 +498,7 @@ function drawPass(g,evtName,evtDate,evtTime,evtVenue,instName,instAddr,color,qrU
   c.beginPath();c.moveTo(PAD,infoY+82);c.lineTo(PW-PAD,infoY+82);c.stroke();field('MOBILE',g.mobile||'—',PAD,infoY+92,hw);
   c.beginPath();c.moveTo(PAD,infoY+126);c.lineTo(PW-PAD,infoY+126);c.stroke();
   
-  const QS=280, QX=Math.round((PW-QS)/2), QY=465;
+  const QS=280, QX=Math.round((PW-QS)/2), QY=490;
   c.fillStyle='#f9fafb';rr(c,QX-14,QY-14,QS+28,QS+46,12);c.fill();c.strokeStyle=accClr;c.lineWidth=3;rr(c,QX-14,QY-14,QS+28,QS+46,12);c.stroke();
   c.fillStyle=accClr;rr(c,QX-14,QY-14,QS+28,10,12);c.fill();c.fillRect(QX-14,QY-8,QS+28,8);
   if(qrUrl){const qi=new Image();qi.onload=()=>{c.drawImage(qi,QX,QY,QS,QS);};qi.src=qrUrl;}
