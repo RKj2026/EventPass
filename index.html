@@ -8,11 +8,17 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Gate Operations | EventPass</title>
 
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+
 <meta property="og:title" content="EventPass - Gate Operations">
 <meta property="og:description" content="Staff dashboard for managing event check-ins.">
 <link rel="icon" type="image/jpeg" href="bg-image.jpg">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
 
 <style>
 /* 🔵 PREMIUM FROSTED GLASS THEME (NAVY/RED EDITION) 🔵 */
@@ -29,9 +35,9 @@
   --text2: #475569; 
   --text3: #64748b; 
   
-  --accent: #dc2626;     /* Primary Red */
+  --accent: #dc2626;     
   --accent-hover: #b91c1c;
-  --navy: #1e3a8a;       /* Primary Navy */
+  --navy: #1e3a8a;       
   
   --green: #059669; --green-bg: #d1fae5;
   --amber: #d97706; --amber-bg: #fef3c7;
@@ -47,7 +53,7 @@ body { background: var(--bg-gradient); background-attachment: fixed; }
 
 .app{display:flex;flex-direction:column;height:100vh;max-width:560px;margin:0 auto; position:relative;}
 
-#offline-banner { display: none; background: var(--red); color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; z-index: 9999; }
+#offline-banner { display: none; background: var(--amber); color: #fff; text-align: center; padding: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; z-index: 9999; }
 
 /* Frosted Glass Header */
 .header{ background: rgba(30, 58, 138, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -201,7 +207,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 </head>
 <body>
 
-<div id="offline-banner">⚠️ You are offline. Scans will resume syncing when connection returns.</div>
+<div id="offline-banner">⚡ Operating in Offline Mode. Scans will sync automatically.</div>
 
 <div id="delete-modal">
   <div class="modal-box">
@@ -433,12 +439,11 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:6px;font-wei
   <button id="undo-btn" onclick="executeUndo()">Undo</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, query, orderBy, writeBatch, addDoc, deleteDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+
+// 🚀 LOW BANDWIDTH UPGRADE: Importing Local Cache Tools
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, updateDoc, onSnapshot, query, orderBy, writeBatch, addDoc, deleteDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
 
 // ══ ORIGINAL EVENTPASS CONFIG ══
 const firebaseConfig = {
@@ -451,7 +456,11 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig); 
-const db = getFirestore(app);
+
+// 🚀 LOW BANDWIDTH UPGRADE: Enable Offline Persistence
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+});
 
 window.guests = []; window.entryLog = []; window.recentScans = [];
 let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
@@ -642,7 +651,6 @@ window.handleFile = async function(e){
         const pasKey=fk(['passtype', 'tickettype', 'entrytype']); 
         const schKey=fk(['school','college','department']); const yrKey=fk(['year','passing']);
         
-        // 💡 LEGACY QR LINK CAPTURE
         const qrKey = fk(['qrlink', 'gdrive', 'googlelink', 'legacyqr', 'passlink']);
         
         // Companion Pre-fill Fields
@@ -660,7 +668,7 @@ window.handleFile = async function(e){
         await setDoc(doc(db, "guests", uid), {
           uid, name, degree:cleanStr(row[degKey]||'UG')||'UG', school:cleanStr(row[schKey]||''), passYear:cleanStr(row[yrKey]||''),
           email:cleanStr(row[emlKey]||'').toLowerCase(), mobile:cleanStr(row[mobKey]||''), passType:String(row[pasKey]||'').toLowerCase().includes('dual')?'Dual Entry':'Single Entry',
-          qrLink: cleanStr(row[qrKey]||''), // Stores the Google Drive link if provided
+          qrLink: cleanStr(row[qrKey]||''), 
           checkinCount:0, lastCheckin:null,
           compName: cleanStr(row[cNameKey]||''),
           compEmail: cleanStr(row[cEmlKey]||''),
