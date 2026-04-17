@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>E-Pass | EventPass</title>
+
+<meta property="og:title" content="Your Event E-Pass">
+<meta property="og:image" content="https://rkj2026.github.io/YOUR-REPO-NAME/bg-image.jpg">
+<link rel="icon" type="image/jpeg" href="bg-image.jpg">
+
+<style>
+/* 🔵 PREMIUM E-PASS THEME (NAVY/RED) 🔵 */
+:root {
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --navy: #1e3a8a; --green: #10b981; --accent: #dc2626; 
+  --text: #0f172a; --text2: #475569; --border: #e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body { 
+  background: var(--bg-gradient); background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 20px; position: relative; z-index: 1;
+}
+
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-image: url('bg-image.jpg'); background-repeat: no-repeat;
+  background-position: center center; background-size: 60%; opacity: 0.08; z-index: -1;
+}
+
+/* Digital Ticket Shape */
+.ticket {
+  background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  width: 100%; max-width: 400px; border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(30, 58, 138, 0.15);
+  position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+  display: none; /* Hidden until loaded */
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.ticket-header {
+  background: var(--navy); color: #fff; padding: 24px 20px; text-align: center;
+  border-bottom: 2px dashed rgba(255,255,255,0.3); position: relative;
+}
+/* Ticket Cutouts */
+.ticket-header::before, .ticket-header::after {
+  content: ''; position: absolute; bottom: -12px; width: 24px; height: 24px;
+  background: var(--bg-gradient); border-radius: 50%; z-index: 2;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.ticket-header::before { left: -12px; border-right: 1px solid rgba(255,255,255,0.5); }
+.ticket-header::after { right: -12px; border-left: 1px solid rgba(255,255,255,0.5); }
+
+.brand { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; }
+.brand span { color: #f87171; }
+.evt-name { font-size: 13px; font-weight: 600; opacity: 0.8; }
+
+.ticket-body { padding: 30px 24px; text-align: center; }
+.guest-name { font-size: 28px; font-weight: 900; color: var(--text); margin-bottom: 6px; line-height: 1.1; }
+.guest-meta { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 24px; }
+
+.ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; background: rgba(255,255,255,0.6); padding: 16px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 24px; }
+.lbl { font-size: 10px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.val { font-size: 14px; font-weight: 800; color: var(--text); }
+.val.blue { color: #0ea5e9; } .val.red { color: #ef4444; }
+
+.status-badge { display: inline-block; padding: 8px 16px; border-radius: 99px; font-size: 14px; font-weight: 800; margin-bottom: 24px; }
+.status-valid { background: #dbeafe; color: #0284c7; border: 1px solid rgba(14,165,233,0.3); }
+.status-in { background: #d1fae5; color: #059669; border: 1px solid rgba(16,185,129,0.3); }
+
+.btn { width: 100%; background: linear-gradient(135deg, var(--accent), #b91c1c); color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: 900; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 20px rgba(220,38,38,0.3); text-transform: uppercase; letter-spacing: 1px; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(220,38,38,0.4); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+
+#loader { text-align: center; }
+.spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(30,58,138,0.1); border-radius: 50%; border-top-color: var(--accent); animation: spin 1s ease-in-out infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Companion Form */
+#comp-box { display:none; text-align:left; background: rgba(255,255,255,0.9); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom:20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.comp-title { font-size:12px; font-weight:800; color:var(--navy); margin-bottom:10px; text-transform:uppercase; }
+input, select { width:100%; padding:12px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:8px; font-size:13px; font-family:inherit; background:#f8fafc; outline:none; }
+input:focus, select:focus { border-color:var(--navy); background:#fff; box-shadow: 0 0 0 3px rgba(30,58,138,0.1); }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <h2 style="color:var(--navy); font-weight:800;">Loading Secure Pass...</h2>
+</div>
+
+<div class="ticket" id="ticket">
+  <div class="ticket-header">
+    <div class="brand">Event<span>Pass</span></div>
+    <div class="evt-name" id="t-evt">AAFT Event</div>
+  </div>
+  
+  <div class="ticket-body">
+    <div id="status-indicator" class="status-badge status-valid">Valid Pass</div>
+    
+    <div class="guest-name" id="t-name">Loading...</div>
+    <div class="guest-meta" id="t-meta">Loading...</div>
+    
+    <div class="ticket-grid">
+      <div><div class="lbl">Unique ID</div><div class="val" id="t-uid" style="font-family:monospace;">---</div></div>
+      <div><div class="lbl">Pass Type</div><div class="val" id="t-type">---</div></div>
+    </div>
+
+    <div id="comp-box">
+      <div class="comp-title">Guest Details (Required for Dual Pass)</div>
+      <input type="text" id="c-name" placeholder="Guest Full Name">
+      <input type="email" id="c-email" placeholder="Guest Email ID">
+      <input type="tel" id="c-mobile" placeholder="Guest 10-digit Mobile">
+      
+      <label style="font-size:11px; font-weight:700; color:var(--text2); margin-top:4px; display:block; margin-bottom:4px;">Is Guest an Alumni?</label>
+      <select id="c-alumni" onchange="document.getElementById('c-alumni-wrap').style.display = this.value === 'Yes' ? 'block' : 'none';">
+        <option value="Yes">Yes, Alumni</option>
+        <option value="No">No, Non-Alumni</option>
+      </select>
+
+      <div id="c-alumni-wrap" style="display:block;">
+        <select id="c-school">
+          <option value="">Select School...</option>
+          <option value="SOFD">SOFD</option><option value="SODM">SODM</option><option value="SOA">SOA</option>
+          <option value="SOC">SOC</option><option value="SODS">SODS</option><option value="SOJMC">SOJMC</option>
+          <option value="SOSP">SOSP</option><option value="SOID">SOID</option><option value="SOFA">SOFA</option>
+          <option value="SOM">SOM</option><option value="SOPA">SOPA</option><option value="SOPARE">SOPARE</option>
+          <option value="SOHT">SOHT</option><option value="SOW">SOW</option>
+        </select>
+        <input type="number" id="c-year" placeholder="Passing Year (e.g. 2025)">
+        <select id="c-degree">
+          <option value="UG">UG</option><option value="PG">PG</option><option value="DIP">DIP</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="action-area">
+      <button class="btn" id="checkin-btn" onclick="performCheckIn()">Swipe to Check-In</button>
+      <p style="font-size:11px; color:var(--text3); margin-top:16px; font-weight:600;">Show this pass at the gate or check-in now to skip the line.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+
+// YOUR ORIGINAL EVENTPASS KEYS
+const firebaseConfig = {
+  apiKey: "AIzaSyAHoI1PZqsf_6UojNsgDFqSaQ_00I27onw",
+  authDomain: "scanner-system-32692.firebaseapp.com",
+  projectId: "scanner-system-32692",
+  storageBucket: "scanner-system-32692.firebasestorage.app",
+  messagingSenderId: "517388530229",
+  appId: "1:517388530229:web:418d4e80fce9bfa931f77c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let guestData = null;
+let guestId = null;
+
+// Read UID from the URL (e.g., ticket.html?id=2026-001)
+const urlParams = new URLSearchParams(window.location.search);
+const uid = urlParams.get('id');
+
+async function loadPass() {
+  if (!uid) { showError("Invalid Pass Link", "No Ticket ID found in URL."); return; }
+
+  try {
+    // 1. Get Event Details
+    const confRef = doc(db, "config", "eventDetails");
+    const confSnap = await getDoc(confRef);
+    if(confSnap.exists()) { document.getElementById('t-evt').textContent = confSnap.data().evtName || 'AAFT Event'; }
+
+    // 2. Get Guest Data
+    const docRef = doc(db, "guests", uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      showError("Pass Not Found", "This ticket ID is not registered in the system.");
+      return;
+    }
+
+    guestData = docSnap.data();
+    guestId = docSnap.id;
+    renderPass();
+
+  } catch(e) {
+    showError("Connection Error", "Please check your internet connection and refresh.");
+  }
+}
+
+function renderPass() {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('ticket').style.display = 'block';
+
+  document.getElementById('t-name').textContent = guestData.name;
+  
+  // Format Meta string for Original EventPass (Degree, School, Year)
+  let metaArr = [];
+  if(guestData.degree) metaArr.push(guestData.degree);
+  if(guestData.school) metaArr.push(guestData.school);
+  if(guestData.passYear) metaArr.push(guestData.passYear);
+  document.getElementById('t-meta').textContent = metaArr.join(' • ') || 'Event Attendee';
+  
+  document.getElementById('t-uid').textContent = guestData.uid;
+  
+  const isDual = String(guestData.passType).toLowerCase().includes('dual');
+  const typeEl = document.getElementById('t-type');
+  typeEl.textContent = isDual ? 'DUAL PASS' : 'SINGLE PASS';
+  typeEl.className = isDual ? 'val blue' : 'val red';
+
+  const maxEntries = isDual ? 2 : 1;
+  const count = guestData.checkinCount || 0;
+
+  const statusEl = document.getElementById('status-indicator');
+  const actionArea = document.getElementById('action-area');
+  const compBox = document.getElementById('comp-box');
+
+  if (count >= maxEntries) {
+    statusEl.textContent = 'Already Checked In ✅';
+    statusEl.className = 'status-badge status-in';
+    actionArea.innerHTML = '<p style="font-size:13px; font-weight:800; color:#059669; background:#d1fae5; padding:16px; border-radius:12px;">This pass has been successfully verified.</p>';
+    compBox.style.display = 'none';
+  } else {
+    // Needs Check-In
+    if(isDual && count === 0) {
+      compBox.style.display = 'block';
+      // Pre-fill if data already exists in database
+      if(guestData.compName) document.getElementById('c-name').value = guestData.compName;
+      if(guestData.compEmail) document.getElementById('c-email').value = guestData.compEmail;
+      if(guestData.compMobile) document.getElementById('c-mobile').value = guestData.compMobile;
+      
+      const isAlumDefault = guestData.compAlumni === 'No' ? 'No' : 'Yes';
+      document.getElementById('c-alumni').value = isAlumDefault;
+      document.getElementById('c-alumni-wrap').style.display = isAlumDefault === 'Yes' ? 'block' : 'none';
+      
+      if(guestData.compSchool) document.getElementById('c-school').value = guestData.compSchool;
+      if(guestData.compYear) document.getElementById('c-year').value = guestData.compYear;
+      if(guestData.compDegree) document.getElementById('c-degree').value = guestData.compDegree;
+    }
+  }
+}
+
+window.performCheckIn = async function() {
+  const btn = document.getElementById('checkin-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  const isDual = String(guestData.passType).toLowerCase().includes('dual');
+  let cName='', cEmail='', cMobile='', isAlum='Yes', cSchool='N/A', cYear='N/A', cDegree='N/A';
+
+  // If Dual Pass, require companion info
+  if(isDual && (guestData.checkinCount || 0) === 0) {
+    cName = document.getElementById('c-name').value.trim();
+    cEmail = document.getElementById('c-email').value.trim();
+    cMobile = document.getElementById('c-mobile').value.trim();
+    isAlum = document.getElementById('c-alumni').value;
+    
+    if(isAlum === 'Yes') {
+      cSchool = document.getElementById('c-school').value;
+      cYear = document.getElementById('c-year').value.trim();
+      cDegree = document.getElementById('c-degree').value;
+    }
+
+    if(!cName || !cEmail || !cMobile) {
+      alert("Please fill in your Guest's details to activate the Dual Pass.");
+      btn.disabled = false; btn.textContent = 'Swipe to Check-In'; return;
+    }
+    if(isAlum === 'Yes' && (!cSchool || !cYear)) {
+      alert("School and Year are mandatory for Alumni.");
+      btn.disabled = false; btn.textContent = 'Swipe to Check-In'; return;
+    }
+  }
+
+  try {
+    if (isDual) {
+       await updateDoc(doc(db, "guests", guestId), { 
+         checkinCount: 2, lastCheckin: new Date().toISOString(),
+         compName: cName, compEmail: cEmail, compMobile: cMobile,
+         compAlumni: isAlum, compSchool: cSchool, compYear: cYear, compDegree: cDegree
+       });
+       await addDoc(collection(db, "log"), { uid: guestData.uid, name: guestData.name, degree: guestData.degree||'', school: guestData.school||'', passYear: guestData.passYear||'', passType: guestData.passType, type: "checked_in", time: new Date().toISOString() });
+       await addDoc(collection(db, "log"), { uid: guestData.uid+"-GUEST", name: cName, degree: cDegree, school: cSchool, passYear: cYear, passType: "Companion Entry", type: "checked_in", time: new Date().toISOString() });
+    } else {
+       await updateDoc(doc(db, "guests", guestId), { checkinCount: 1, lastCheckin: new Date().toISOString() });
+       await addDoc(collection(db, "log"), { uid: guestData.uid, name: guestData.name, degree: guestData.degree||'', school: guestData.school||'', passYear: guestData.passYear||'', passType: guestData.passType, type: "checked_in", time: new Date().toISOString() });
+    }
+    
+    // Refresh UI
+    guestData.checkinCount = isDual ? 2 : 1;
+    renderPass();
+
+  } catch(e) {
+    alert("Connection error. Try again.");
+    btn.disabled = false; btn.textContent = 'Swipe to Check-In';
+  }
+}
+
+function showError(title, msg) {
+  document.getElementById('loader').style.display = 'none';
+  const t = document.getElementById('ticket');
+  t.style.display = 'block';
+  t.innerHTML = `<div style="padding:40px 20px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:16px;">❌</div>
+    <h2 style="color:#ef4444; font-weight:900; margin-bottom:8px;">${title}</h2>
+    <p style="color:var(--text2); font-size:14px; font-weight:600;">${msg}</p>
+  </div>`;
+}
+
+// Start
+loadPass();
+</script>
+</body>
+</html>
