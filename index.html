@@ -10,7 +10,6 @@
 
 <meta property="og:title" content="EventPass - Gate Operations">
 <meta property="og:description" content="Staff dashboard for managing event check-ins.">
-<meta property="og:image" content="https://rkj2026.github.io/YOUR-REPO-NAME/bg-image.jpg">
 <link rel="icon" type="image/jpeg" href="bg-image.jpg">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -54,7 +53,7 @@ body { background: var(--bg-gradient); background-attachment: fixed; }
 .header{ background: rgba(30, 58, 138, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .logo{font-size:20px;font-weight:800;letter-spacing:-0.3px;color:#ffffff;display:flex;align-items:center;gap:8px;}
 .logo img{height:28px;border-radius:6px;display:none;background:#fff;padding:2px;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
-.logo span{color: #f87171;} /* Lighter red for contrast on navy */
+.logo span{color: #f87171;} 
 
 /* Floating Stats Grid */
 .gate-stats { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
@@ -117,7 +116,8 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:6px;font-wei
 .avatar-gray{background: var(--border); color:var(--text2);}
 .guest-info{flex:1;min-width:0;}
 .guest-name{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.guest-meta{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
+/* FIXED: Allow long emails and meta info to wrap naturally */
+.guest-meta{font-size:11px;color:var(--text3);margin-top:3px; word-wrap: break-word; font-weight:500;}
 
 /* Analytics Tab Grids */
 .chart-container { position: relative; height: 200px; width: 100%; margin-top: 10px; }
@@ -270,7 +270,7 @@ body::before {
         <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
           <div class="upload-icon">📋</div>
           <h3>Upload Attendee List</h3>
-          <p>Excel (.xlsx) or CSV<br>Columns: <strong>ID · Name · Degree · School · Year · Email · Mobile · Pass Type</strong><br><span style="font-size:10px;color:var(--accent);">Pro-Tip: Include columns like 'Guest Name' or 'Guest Email' to pre-fill Dual Pass details!</span></p>
+          <p>Excel (.xlsx) or CSV<br>Columns: <strong>ID · Name · Degree · School · Year · Email · Mobile · Pass Type</strong><br><span style="font-size:10px;color:var(--accent);">Pro-Tip: Include a <strong>'QR Link'</strong> column with your Drive links to bridge old passes!</span></p>
           <input type="file" id="file-input" accept=".xlsx,.csv" style="display:none" onchange="handleFile(event)">
         </div>
       </div>
@@ -319,7 +319,6 @@ body::before {
           <canvas id="chart-status"></canvas>
         </div>
       </div>
-      
       <div class="card">
         <div class="card-title">Check-In Velocity (Traffic Peaks)</div>
         <p style="font-size:11px; color:var(--text3); margin-top:-10px; margin-bottom:8px;">Shows foot traffic volume per hour.</p>
@@ -327,7 +326,6 @@ body::before {
           <canvas id="chart-velocity"></canvas>
         </div>
       </div>
-      
       <div class="card">
         <div class="card-title">Attendee Demographics (By School)</div>
         <div class="chart-container">
@@ -417,7 +415,7 @@ body::before {
         <div class="card-title">Manual Search / Fallback</div>
         <div class="manual-search-container">
           <div class="scan-manual">
-            <input type="text" id="manual-input" placeholder="Type name or ID…" oninput="liveSearch()" onfocus="liveSearch()">
+            <input type="text" id="manual-input" placeholder="Type name, email or ID…" oninput="liveSearch()" onfocus="liveSearch()" onkeypress="if(event.key==='Enter') manualScan()">
             <button class="btn btn-primary" onclick="manualScan()">Check</button>
           </div>
           <div id="search-dropdown"></div>
@@ -456,7 +454,7 @@ body::before {
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, query, orderBy, writeBatch, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, query, orderBy, writeBatch, addDoc, deleteDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/12.2.0/firebase-firestore.js";
 
 // ══ ORIGINAL EVENTPASS CONFIG ══
 const firebaseConfig = {
@@ -475,7 +473,7 @@ window.guests = []; window.entryLog = []; window.recentScans = [];
 let videoStream=null, scanInterval=null, torchOn=false, lastScanTime=0;
 const COOLDOWN=2500; let rebuildTimer=null, saveTimer=null, logoDataUrl='', cameraActive=false;
 let lastScanDoc = null; let undoTimeout = null;
-let chart1, chart2, chart3; // Chart instances
+let chart1, chart2, chart3; 
 
 window.addEventListener('offline', () => document.getElementById('offline-banner').style.display = 'block');
 window.addEventListener('online', () => document.getElementById('offline-banner').style.display = 'none');
@@ -527,7 +525,6 @@ onSnapshot(q, (snapshot) => {
   if(document.getElementById('tab-analytics').classList.contains('active')) buildCharts();
 });
 
-// ── CUSTOM SECURITY MODAL (CLEAR ALL) ──
 window.openDeleteModal = function() {
   if(!window.guests.length) { window.showToast('Database is already empty.'); return; }
   document.getElementById('delete-confirm-input').value = '';
@@ -555,7 +552,6 @@ window.executeClearAll = async function(){
   } catch (e) { alert("Failed to clear data."); }
 }
 
-// ── CHART.JS ANALYTICS ENGINE (Original Fields: School) ──
 window.buildCharts = function() {
   if(!window.Chart) return; 
 
@@ -655,11 +651,15 @@ window.handleFile = async function(e){
         const keys=Object.keys(row);
         const fk=pats=>keys.find(k=>pats.some(p=>k.toLowerCase().replace(/[\s_\-\.]/g,'').includes(p)));
         
-        // Original Fields
+        // Primary Fields
         const uidKey=fk(['uniqueid','uid','id']); const nameKey=fk(['name','fullname']);
         const degKey=fk(['degreetype','degree','course']); const emlKey=fk(['emailid','email']);
-        const mobKey=fk(['mobileno','mobile','phone']); const pasKey=fk(['passtype','pass','entry','type']);
+        const mobKey=fk(['mobileno','mobile','phone']); 
+        const pasKey=fk(['passtype', 'tickettype', 'entrytype']); 
         const schKey=fk(['school','college','department']); const yrKey=fk(['year','passing']);
+        
+        // 💡 LEGACY QR LINK CAPTURE
+        const qrKey = fk(['qrlink', 'gdrive', 'googlelink', 'legacyqr', 'passlink']);
         
         // Companion Pre-fill Fields
         const cNameKey = fk(['guestname', 'compname', 'companionname', 'guest', 'companion']);
@@ -675,9 +675,9 @@ window.handleFile = async function(e){
         
         await setDoc(doc(db, "guests", uid), {
           uid, name, degree:cleanStr(row[degKey]||'UG')||'UG', school:cleanStr(row[schKey]||''), passYear:cleanStr(row[yrKey]||''),
-          email:cleanStr(row[emlKey]||''), mobile:cleanStr(row[mobKey]||''), passType:String(row[pasKey]||'').toLowerCase().includes('dual')?'Dual Entry':'Single Entry',
+          email:cleanStr(row[emlKey]||'').toLowerCase(), mobile:cleanStr(row[mobKey]||''), passType:String(row[pasKey]||'').toLowerCase().includes('dual')?'Dual Entry':'Single Entry',
+          qrLink: cleanStr(row[qrKey]||''), // Stores the Google Drive link if provided
           checkinCount:0, lastCheckin:null,
-          // Store Companion Data
           compName: cleanStr(row[cNameKey]||''),
           compEmail: cleanStr(row[cEmlKey]||''),
           compMobile: cleanStr(row[cMobKey]||''),
@@ -697,7 +697,7 @@ window.handleFile = async function(e){
 window.addManual = async function(){
   const uid=cleanStr(document.getElementById('add-uid').value); const name=cleanStr(document.getElementById('add-name').value);
   const school=document.getElementById('add-school').value; const year=cleanStr(document.getElementById('add-year').value);
-  const email=cleanStr(document.getElementById('add-email').value); const mobile=cleanStr(document.getElementById('add-mobile').value);
+  const email=cleanStr(document.getElementById('add-email').value).toLowerCase(); const mobile=cleanStr(document.getElementById('add-mobile').value);
   const degree=document.getElementById('add-degree').value; const passType=document.getElementById('add-passtype').value;
   
   if(!uid||!name||!school||!year||!email||!mobile){ window.showToast('All fields are mandatory!'); return; }
@@ -795,28 +795,48 @@ window.liveSearch = function(){
   const v=document.getElementById('manual-input').value.trim().toLowerCase();
   const dd=document.getElementById('search-dropdown');
   if(!v) { dd.style.display='none'; return; }
-  const matches = window.guests.filter(g=>g.name.toLowerCase().includes(v)||g.uid.toLowerCase().includes(v)).slice(0,5);
+  const matches = window.guests.filter(g=>g.name.toLowerCase().includes(v)||g.uid.toLowerCase().includes(v)||(g.email||'').toLowerCase().includes(v)).slice(0,5);
   if(!matches.length) { dd.style.display='none'; return; }
   dd.innerHTML = matches.map(g=>`<div class="search-dropdown-item" onclick="document.getElementById('manual-input').value='${g.uid}';document.getElementById('search-dropdown').style.display='none';window.manualScan();"><div><div style="font-weight:800;font-size:13px;color:var(--text);">${window.esc(g.name)}</div><div style="font-size:10px;color:var(--text3);">${window.esc(g.uid)}</div></div><div class="badge ${window.isDual(g)?'badge-blue':'badge-red'}">${window.isDual(g)?'Dual':'Single'}</div></div>`).join('');
   dd.style.display='block';
 }
 document.addEventListener('click', (e)=>{ if(!e.target.closest('.manual-search-container')) document.getElementById('search-dropdown').style.display='none'; });
 
-window.manualScan = function(){ const v=document.getElementById('manual-input').value.trim();if(!v)return; window.processScan(v);document.getElementById('manual-input').value=''; document.getElementById('search-dropdown').style.display='none'; }
+window.manualScan = async function(){ 
+  const v=document.getElementById('manual-input').value.trim();
+  if(!v)return; 
+  
+  document.getElementById('manual-input').value=''; 
+  document.getElementById('search-dropdown').style.display='none';
+  
+  window.processScan(v);
+}
 
 // ── CORE SCANNER LOGIC ──
 window.processScan = async function(raw){
-  const uid = cleanStr(raw);
+  let scannedText = cleanStr(raw);
+  
+  // 💡 NEW SMART EXTRACTOR FOR E-PASS QR CODES
+  let searchId = scannedText;
+  if (searchId.includes('ticket.html?id=')) {
+    searchId = searchId.split('ticket.html?id=')[1].split('&')[0];
+  }
+
   const resBox = document.getElementById('scan-result');
   resBox.className = 'scan-result show';
 
-  const guest = window.guests.find(g => String(g.uid).toLowerCase() === uid.toLowerCase());
+  // 💡 Search local memory for UID, Exact Email, or the exact Google Drive Link
+  const guest = window.guests.find(g => 
+    String(g.uid).toLowerCase() === searchId.toLowerCase() || 
+    String(g.email || '').toLowerCase() === searchId.toLowerCase() || 
+    String(g.qrLink || '').toLowerCase() === scannedText.toLowerCase()
+  );
 
   if (!guest) {
     resBox.classList.add('fail'); document.getElementById('res-icon').textContent = '✕';
-    document.getElementById('res-name').textContent = 'Not Registered'; document.getElementById('res-sub').textContent = uid;
+    document.getElementById('res-name').textContent = 'Not Registered'; document.getElementById('res-sub').textContent = scannedText;
     document.getElementById('res-detail').innerHTML = ''; vibrate([100,50,100]); soundError();
-    window.logToFirebase({uid: uid, name: "Unknown", passType: "N/A"}, 'not_found'); return;
+    window.logToFirebase({uid: scannedText, name: "Unknown", passType: "N/A"}, 'not_found'); return;
   }
 
   const dual = window.isDual(guest);
